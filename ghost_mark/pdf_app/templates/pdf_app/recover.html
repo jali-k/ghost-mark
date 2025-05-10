@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recover Email from Number</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .back-link {
+        display: block;
+        margin-top: 20px;
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Recover Email from Number</h1>
+    <div class="form-container">
+      <p>
+        Enter the 10-digit number extracted from a PDF to recover the original
+        email address.
+      </p>
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label for="number">10-Digit Number:</label>
+          <input
+            type="text"
+            id="number"
+            name="number"
+            required
+            pattern="[0-9]{10}"
+            maxlength="10"
+          />
+          <small>Enter exactly 10 digits</small>
+        </div>
+        <button type="submit">Recover Email</button>
+      </form>
+    </div>
+    <a href="{% url 'pdf_app:index' %}" class="back-link"
+      >Back to PDF Processing</a
+    >
+  </body>
+</html>
