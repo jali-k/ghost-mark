@@ -19,7 +19,7 @@ class PDFWatermarkService:
     def add_invisible_watermark(pdf_file, watermark_text, color=None):
         """
         Add an invisible watermark to a PDF file using a fixed near-white color.
-        Places watermarks closer to the page corners.
+        Places watermarks only at the top and bottom of the left side of each page.
         Returns the watermarked PDF file as BytesIO.
         """
         # Always use our fixed watermark color for consistency
@@ -37,23 +37,12 @@ class PDFWatermarkService:
         width, height = letter
 
         # Use a smaller font for less intrusive watermarks
-        c.setFont("Helvetica", 10)  # Reduced from 24 to 18
+        c.setFont("Helvetica", 10)  # Small font size for better invisibility
         c.setFillColorRGB(r / 255, g / 255, b / 255)
 
-        # Remove the center watermark and place watermarks closer to the corners
-        # Draw at each corner - closer to the actual corners
-        c.drawString(
-            20, 20, watermark_text
-        )  # Bottom left - moved from (50,50) to (20,20)
-        c.drawString(
-            width - 150, 20, watermark_text
-        )  # Bottom right - moved from (width-200,50) to (width-150,20)
-        c.drawString(
-            20, height - 30, watermark_text
-        )  # Top left - moved from (50,height-50) to (20,height-30)
-        c.drawString(
-            width - 150, height - 30, watermark_text
-        )  # Top right - moved from (width-200,height-50) to (width-150,height-30)
+        # Place watermarks only on the left side - top and bottom
+        c.drawString(20, height - 30, watermark_text)  # Top left
+        c.drawString(20, 20, watermark_text)  # Bottom left
 
         c.save()
 
