@@ -78,7 +78,9 @@
       <a href="{% url 'pdf_app:add_border' %}">Add Border</a> |
       <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
       <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
-      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
+      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a> |
+      <a href="{% url 'pdf_app:add_qr_code' %}">Add QR Code</a> |
+      <a href="{% url 'pdf_app:scan_qr_code' %}">Scan QR Code</a>
     </div>
 
     <!-- Features Section -->
@@ -127,6 +129,29 @@
           >Extract Watermark</a
         >
       </div>
+      
+      <!-- New QR Code Features -->
+      <div class="feature-card">
+        <h3>QR Code Embedding</h3>
+        <p>
+          Add a small QR code to the bottom-right corner of your PDF that encodes your
+          email address for easy document verification.
+        </p>
+        <a href="{% url 'pdf_app:add_qr_code' %}" class="link"
+          >Add QR Code</a
+        >
+      </div>
+
+      <div class="feature-card">
+        <h3>QR Code Scanner</h3>
+        <p>
+          Scan or upload QR codes from our system to retrieve the original email address
+          associated with the document.
+        </p>
+        <a href="{% url 'pdf_app:scan_qr_code' %}" class="link"
+          >Scan QR Code</a
+        >
+      </div>
     </div>
 
     <div class="info-container">
@@ -146,6 +171,13 @@
         invisible to the human eye, which can later be extracted using our
         special extraction tool. The watermark remains detectable even in
         screenshots or printouts of the document.
+      </p>
+      
+      <h4>QR Code Embedding</h4>
+      <p>
+        The QR Code feature adds a small, unobtrusive QR code to the bottom-right corner of each page
+        in your PDF document. This QR code contains an encoded version of your email address that can be 
+        scanned with any QR code reader or our specialized scanner tool to verify the document's source.
       </p>
 
       <h4>Document Security</h4>

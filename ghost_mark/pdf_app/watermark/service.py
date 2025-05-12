@@ -1,4 +1,3 @@
-
 import os
 import cv2
 import numpy as np
@@ -38,7 +37,7 @@ class PDFWatermarkService:
         width, height = letter
 
         # Use a smaller font for less intrusive watermarks
-        c.setFont("Helvetica", 18)  # Reduced from 24 to 18
+        c.setFont("Helvetica", 10)  # Reduced from 24 to 18
         c.setFillColorRGB(r / 255, g / 255, b / 255)
 
         # Remove the center watermark and place watermarks closer to the corners

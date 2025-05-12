@@ -47,3 +47,55 @@ class ExtractWatermarkForm(forms.Form):
             attrs={"class": "form-control", "accept": ".pdf,.png,.jpg,.jpeg"}
         ),
     )
+
+
+class PDFQRCodeForm(forms.Form):
+    """Form for adding QR codes with encoded emails to PDFs."""
+
+    pdf_file = forms.FileField(
+        label="Upload PDF",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": ".pdf"}),
+    )
+    email = forms.EmailField(
+        label="Your Email",
+        widget=forms.EmailInput(
+            attrs={"class": "form-control", "placeholder": "example@email.com"}
+        ),
+    )
+
+
+class QRCodeScanForm(forms.Form):
+    """Form for scanning QR codes or manually entering the cipher code."""
+
+    qr_code = forms.FileField(
+        label="Upload QR Code Image",
+        required=False,
+        widget=forms.FileInput(
+            attrs={"class": "form-control", "accept": ".png,.jpg,.jpeg"}
+        ),
+        help_text="Upload an image of the QR code",
+    )
+
+    code_string = forms.CharField(
+        label="Or Enter Cipher Code Manually",
+        required=False,
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Enter the complete cipher code from the QR code",
+            }
+        ),
+        help_text="Enter the code from the QR code if you have it",
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        qr_code = cleaned_data.get("qr_code")
+        code_string = cleaned_data.get("code_string")
+
+        if not qr_code and not code_string:
+            raise forms.ValidationError(
+                "Please either upload a QR code image or enter the code manually."
+            )
+
+        return cleaned_data
