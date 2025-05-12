@@ -16,6 +16,12 @@ from .models import WatermarkedDocument
 
 
 def index(request):
+    """Homepage view - displays feature cards and info."""
+    return render(request, "pdf_app/index.html")
+
+
+def add_border(request):
+    """View for adding email tracking borders to PDFs."""
     if request.method == "POST":
         form = PDFEmailForm(request.POST, request.FILES)
         if form.is_valid():
@@ -53,7 +59,7 @@ def index(request):
     else:
         form = PDFEmailForm()
 
-    return render(request, "pdf_app/index.html", {"form": form})
+    return render(request, "pdf_app/add_border.html", {"form": form})
 
 
 def recover_email(request):

@@ -1,158 +1,158 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>GhostMark PDF Tools</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .form-container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .features-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            margin-top: 30px;
-            margin-bottom: 20px;
-        }
-        .feature-card {
-            flex: 1 1 calc(50% - 20px);
-            min-width: 250px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 15px;
-            box-sizing: border-box;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="email"], input[type="file"], input[type="text"] {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .link, .recover-link {
-            display: inline-block;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-        .link:hover, .recover-link:hover {
-            background-color: #45a049;
-        }
-        .info-container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-top: 20px;
-        }
-        .nav-links {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .nav-links a {
-            margin: 0 10px;
-            text-decoration: none;
-            color: #4CAF50;
-        }
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
-        h3 {
-            margin-top: 0;
-            color: #333;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .features-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        margin-top: 30px;
+        margin-bottom: 20px;
+      }
+      .feature-card {
+        flex: 1 1 calc(50% - 20px);
+        min-width: 250px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 15px;
+        box-sizing: border-box;
+      }
+      .link {
+        display: inline-block;
+        background-color: #4caf50;
+        color: white;
+        text-decoration: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .link:hover {
+        background-color: #45a049;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+      .nav-links {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      h3 {
+        margin-top: 0;
+        color: #333;
+      }
+      .header-description {
+        text-align: center;
+        margin-bottom: 30px;
+        color: #555;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>GhostMark PDF Tools</h1>
-    
+    <p class="header-description">
+      Secure document tracking and protection tools for your PDFs
+    </p>
+
     <div class="nav-links">
-        <a href="{% url 'pdf_app:index' %}">Home</a> |
-        <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
-        <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
-        <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:add_border' %}">Add Border</a> |
+      <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
+      <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
+      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
     </div>
-    
-    <!-- Email Border Feature -->
-    <div class="form-container">
-        <h2>Add Email Tracking Border</h2>
-        <form method="post" enctype="multipart/form-data">
-            {% csrf_token %}
-            <div class="form-group">
-                <label for="id_pdf_file">Upload PDF:</label>
-                {{ form.pdf_file }}
-                {% if form.pdf_file.errors %}
-                    <div class="error">{{ form.pdf_file.errors }}</div>
-                {% endif %}
-            </div>
-            <div class="form-group">
-                <label for="id_email">Email:</label>
-                {{ form.email }}
-                {% if form.email.errors %}
-                    <div class="error">{{ form.email.errors }}</div>
-                {% endif %}
-            </div>
-            <button type="submit">Process PDF</button>
-        </form>
-    </div>
-    
+
     <!-- Features Section -->
     <h2>Available Features</h2>
     <div class="features-container">
-        <div class="feature-card">
-            <h3>Email Recovery</h3>
-            <p>Extract and recover email addresses from PDFs with tracking borders.</p>
-            <a href="{% url 'pdf_app:recover_email' %}" class="link">Recover Email</a>
-        </div>
-        
-        <div class="feature-card">
-            <h3>Invisible Watermarking</h3>
-            <p>Add invisible text watermarks to your PDF documents that can only be detected by our tools.</p>
-            <a href="{% url 'pdf_app:watermark_pdf' %}" class="link">Add Watermark</a>
-        </div>
-        
-        <div class="feature-card">
-            <h3>Watermark Extraction</h3>
-            <p>Extract hidden watermarks from PDFs or even screenshots of watermarked documents.</p>
-            <a href="{% url 'pdf_app:extract_watermark' %}" class="link">Extract Watermark</a>
-        </div>
+      <div class="feature-card">
+        <h3>Email Tracking Border</h3>
+        <p>
+          Add a unique border pattern to your PDF documents that encodes your
+          email address for tracking document distribution.
+        </p>
+        <a href="{% url 'pdf_app:add_border' %}" class="link"
+          >Add Tracking Border</a
+        >
+      </div>
+
+      <div class="feature-card">
+        <h3>Email Recovery</h3>
+        <p>
+          Extract and recover email addresses from PDFs with tracking borders,
+          even from screenshots or printouts.
+        </p>
+        <a href="{% url 'pdf_app:recover_email' %}" class="link"
+          >Recover Email</a
+        >
+      </div>
+
+      <div class="feature-card">
+        <h3>Invisible Watermarking</h3>
+        <p>
+          Add invisible text watermarks to your PDF documents that can only be
+          detected by our specialized tools.
+        </p>
+        <a href="{% url 'pdf_app:watermark_pdf' %}" class="link"
+          >Add Watermark</a
+        >
+      </div>
+
+      <div class="feature-card">
+        <h3>Watermark Extraction</h3>
+        <p>
+          Extract hidden watermarks from PDFs or even screenshots of watermarked
+          documents to identify the source.
+        </p>
+        <a href="{% url 'pdf_app:extract_watermark' %}" class="link"
+          >Extract Watermark</a
+        >
+      </div>
     </div>
-    
+
     <div class="info-container">
-        <h3>How It Works</h3>
-        <p>The Email Tracking Border feature converts your email to a 10-digit number using a reversible algorithm. This number is then used to create a unique border pattern on your PDF.</p>
-        <p>The right edge of each page will have a unique stepped pattern in the top 1/8 section, where each step is based on a digit from your converted email.</p>
-        <p>Our Invisible Watermarking feature embeds text in a color nearly invisible to the human eye, which can later be extracted using our special extraction tool.</p>
+      <h3>How Our Tools Work</h3>
+
+      <h4>Email Tracking Border</h4>
+      <p>
+        The Email Tracking Border feature converts your email to a 10-digit
+        number using a reversible algorithm. This number is then used to create
+        a unique border pattern on your PDF that can be visually identified or
+        automatically extracted.
+      </p>
+
+      <h4>Invisible Watermarking</h4>
+      <p>
+        Our Invisible Watermarking feature embeds text in a color nearly
+        invisible to the human eye, which can later be extracted using our
+        special extraction tool. The watermark remains detectable even in
+        screenshots or printouts of the document.
+      </p>
+
+      <h4>Document Security</h4>
+      <p>
+        These tools help you track document sharing, identify the source of
+        leaked documents, and provide accountability in document distribution.
+      </p>
     </div>
-</body>
+  </body>
 </html>
