@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scan QR Code</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .nav-links {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="file"],
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .separator {
+        text-align: center;
+        margin: 20px 0;
+        position: relative;
+      }
+      .separator::before {
+        content: "";
+        display: block;
+        width: 100%;
+        height: 1px;
+        background: #ddd;
+        position: absolute;
+        top: 50%;
+        left: 0;
+      }
+      .separator span {
+        background: white;
+        padding: 0 10px;
+        position: relative;
+        color: #666;
+      }
+      small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+      .result-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .email-box {
+        padding: 15px;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        word-break: break-all;
+        margin-top: 10px;
+        font-family: monospace;
+      }
+      .error-message {
+        color: #d32f2f;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Scan QR Code</h1>
+
+    <div class="nav-links">
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:add_border' %}">Add Border</a> |
+      <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
+      <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
+      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a> |
+      <a href="{% url 'pdf_app:add_qr_code' %}">Add QR Code</a> |
+      <a href="{% url 'pdf_app:scan_qr_code' %}">Scan QR Code</a>
+    </div>
+
+    <div class="form-container">
+      <form method="post" enctype="multipart/form-data" id="scanForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_qr_code">Upload QR Code Image:</label>
+          {{ form.qr_code }}
+          <small>{{ form.qr_code.help_text }}</small>
+        </div>
+
+        <div class="separator">
+          <span>OR</span>
+        </div>
+
+        <div class="form-group">
+          <label for="id_code_string">Enter Code Manually:</label>
+          {{ form.code_string }}
+          <small>{{ form.code_string.help_text }}</small>
+        </div>
+
+        <button type="submit">Extract Email</button>
+      </form>
+    </div>
+
+    {% if result %}
+    <div class="result-container">
+      <h3>Extracted Email</h3>
+      <p>
+        The code <strong>{{ result.code }}</strong> was decoded to the following
+        email:
+      </p>
+      <div class="email-box">{{ result.email }}</div>
+    </div>
+    {% endif %} {% if error %}
+    <div class="result-container">
+      <h3>Error</h3>
+      <div class="error-message">{{ error }}</div>
+    </div>
+    {% endif %}
+
+    <div class="info-container">
+      <h3>How It Works</h3>
+      <p>
+        The QR Code Scanner extracts the encoded email address from QR codes
+        created with our system. You can either:
+      </p>
+      <ul>
+        <li>Upload an image containing the QR code</li>
+        <li>Enter the code from the QR code manually</li>
+      </ul>
+      <p>
+        The system will decode the information and retrieve the original email
+        address associated with the document.
+      </p>
+    </div>
+  </body>
+</html>

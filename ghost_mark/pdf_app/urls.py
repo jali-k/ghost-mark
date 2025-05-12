@@ -18,4 +18,7 @@ urlpatterns = [
         views.ExtractWatermarkView.as_view(),
         name="extract_watermark",
     ),
+    # New QR code routes
+    path("add-qr-code/", views.add_qr_code, name="add_qr_code"),
+    path("scan-qr-code/", views.scan_qr_code, name="scan_qr_code"),
 ]

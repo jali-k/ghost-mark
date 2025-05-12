@@ -1,17 +1,31 @@
 import os
 import uuid
+import cv2
+import numpy as np
 from django.shortcuts import render, redirect
 from django.http import FileResponse, HttpResponse, JsonResponse
 from django.views import View
 from django.conf import settings
 from django.core.files.base import ContentFile
 from io import BytesIO
-from .forms import PDFEmailForm
-from .utils import email_to_number, number_to_email, add_border_to_pdf
+from .forms import (
+    PDFEmailForm,
+    PDFQRCodeForm,
+    QRCodeScanForm,
+    WatermarkForm,
+    ExtractWatermarkForm,
+)
+from .utils import (
+    email_to_number,
+    number_to_email,
+    add_border_to_pdf,
+    add_qr_code_to_pdf,
+    generate_qr_code,
+    process_qr_code,
+)
 
 # Import the watermark service
 from .watermark.service import PDFWatermarkService
-from .forms import WatermarkForm, ExtractWatermarkForm
 from .models import WatermarkedDocument
 
 
@@ -220,3 +234,127 @@ class ExtractWatermarkView(View):
             return render(
                 request, self.template_name, {"form": form, "error": error_message}
             )
+
+
+def add_qr_code(request):
+    """View for adding QR codes with encoded emails to PDFs."""
+    if request.method == "POST":
+        form = PDFQRCodeForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Get the uploaded PDF and email
+            pdf_file = request.FILES["pdf_file"]
+            email = form.cleaned_data["email"]
+
+            # Create a unique filename for the output PDF
+            output_filename = f"qrcode_{uuid.uuid4().hex}.pdf"
+            output_path = os.path.join(settings.MEDIA_ROOT, output_filename)
+
+            # Save the uploaded PDF temporarily
+            temp_pdf_path = os.path.join(
+                settings.MEDIA_ROOT, f"temp_{uuid.uuid4().hex}.pdf"
+            )
+            with open(temp_pdf_path, "wb+") as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            try:
+                # Process the PDF, adding QR code using our cipher approach
+                add_qr_code_to_pdf(temp_pdf_path, output_path, email)
+
+                # Clean up the temporary file
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                # Return the processed PDF as a download
+                return FileResponse(
+                    open(output_path, "rb"),
+                    as_attachment=True,
+                    filename=f"qrcode_{pdf_file.name}",
+                )
+            except Exception as e:
+                # Clean up in case of error
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                # Log the error
+                print(f"Error adding QR code: {str(e)}")
+
+                # Return error response
+                return HttpResponse(f"Error adding QR code: {str(e)}", status=500)
+    else:
+        form = PDFQRCodeForm()
+
+    return render(request, "pdf_app/add_qr_code.html", {"form": form})
+
+
+def scan_qr_code(request):
+    """View for scanning QR codes and recovering emails."""
+    result = None
+    error = None
+
+    if request.method == "POST":
+        form = QRCodeScanForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Get form data
+            qr_code_image = form.cleaned_data.get("qr_code")
+            code_string = form.cleaned_data.get("code_string")
+
+            try:
+                # If QR code image is uploaded
+                if qr_code_image:
+                    # Save the image temporarily
+                    temp_dir = os.path.join(settings.MEDIA_ROOT, "temp")
+                    os.makedirs(temp_dir, exist_ok=True)
+                    temp_path = os.path.join(temp_dir, qr_code_image.name)
+
+                    with open(temp_path, "wb+") as destination:
+                        for chunk in qr_code_image.chunks():
+                            destination.write(chunk)
+
+                    try:
+                        # Read the QR code using OpenCV
+                        import cv2
+
+                        # Read the image
+                        image = cv2.imread(temp_path)
+
+                        if image is None:
+                            error = "Failed to read the uploaded image."
+                        else:
+                            # Initialize QR code detector
+                            detector = cv2.QRCodeDetector()
+                            # Decode the QR code
+                            data, bbox, _ = detector.detectAndDecode(image)
+
+                            if data:
+                                code_string = data
+                            else:
+                                error = "Could not detect a QR code in the image."
+                    except Exception as e:
+                        error = f"Error processing QR code image: {str(e)}"
+                    finally:
+                        # Clean up the temporary file
+                        if os.path.exists(temp_path):
+                            os.remove(temp_path)
+
+                # If we have a code string (either entered manually or from QR code)
+                if code_string:
+                    try:
+                        # Process the QR code data using our cipher approach
+                        result = process_qr_code(code_string)
+                    except ValueError as e:
+                        error = str(e)
+
+            except Exception as e:
+                error = f"Error processing QR code: {str(e)}"
+
+        else:
+            # Form validation failed
+            error = "Please either upload a QR code image or enter the code manually."
+    else:
+        form = QRCodeScanForm()
+
+    # For regular form submissions
+    context = {"form": form, "result": result, "error": error}
+
+    return render(request, "pdf_app/scan_qr_code.html", context)
