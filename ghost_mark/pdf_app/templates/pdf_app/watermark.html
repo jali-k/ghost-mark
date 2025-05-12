@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Add Watermark to PDF</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .nav-links {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="file"],
+      input[type="text"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      .note {
+        background-color: #f8f8f8;
+        padding: 10px;
+        border-left: 4px solid #4caf50;
+        margin: 15px 0;
+      }
+      small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .result-container {
+        display: none;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .download-btn {
+        display: inline-block;
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        text-decoration: none;
+        border-radius: 4px;
+        margin-top: 10px;
+      }
+      .download-btn:hover {
+        background-color: #45a049;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Add Invisible Watermark to PDF</h1>
+
+    <div class="nav-links">
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
+      <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
+      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
+    </div>
+
+    <div class="form-container">
+      <form method="post" enctype="multipart/form-data" id="watermarkForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_document">Select PDF File:</label>
+          <input
+            type="file"
+            name="document"
+            id="id_document"
+            accept=".pdf"
+            required
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="id_watermark_text">Watermark Text:</label>
+          <input
+            type="text"
+            name="watermark_text"
+            id="id_watermark_text"
+            placeholder="Leave blank for auto-generated ID"
+          />
+          <small
+            >Optional. A unique identifier will be generated if left
+            blank.</small
+          >
+        </div>
+
+          <!-- Hidden field with fixed color value -->
+          <input type="hidden" name="watermark_color" value="{{ fixed_color|default:'#FFFEFA' }}">
+
+        <div class="note">
+          <strong>Note:</strong> The watermark will be added using a special
+          color that's nearly invisible to the human eye but can be detected by
+          our extraction tool.
+        </div>
+
+        <button type="submit">Add Watermark</button>
+      </form>
+    </div>
+
+    <div class="result-container" id="result">
+      <h3>Watermark Added Successfully!</h3>
+      <p>Your watermarked document is ready for download.</p>
+      <a href="#" id="download_link" class="download-btn"
+        >Download Watermarked PDF</a
+      >
+    </div>
+
+    <div class="info-container">
+      <h3>How It Works</h3>
+      <p>The invisible watermarking system adds text to your PDF that is:</p>
+      <ul>
+        <li>Nearly invisible to the human eye</li>
+        <li>Preserved when the document is printed or screenshot</li>
+        <li>Detectable by our extraction tool</li>
+      </ul>
+      <p>
+        This allows you to track document sharing and identify the source of
+        leaked documents.
+      </p>
+    </div>
+
+    <script>
+      document
+        .getElementById("watermarkForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const submitBtn = this.querySelector('button[type="submit"]');
+          const originalBtnText = submitBtn.textContent;
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Processing...";
+
+          const formData = new FormData(this);
+          const csrfToken = document.querySelector(
+            "[name=csrfmiddlewaretoken]"
+          ).value;
+
+          fetch('{% url "pdf_app:watermark_pdf" %}', {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": csrfToken,
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+
+              if (data.success) {
+                document.getElementById("result").style.display = "block";
+                document.getElementById("download_link").href =
+                  data.download_url;
+              } else {
+                if (data.errors) {
+                  console.log("Form errors:", data.errors);
+                  let errorMessage = "Form validation errors:";
+                  for (const field in data.errors) {
+                    errorMessage += `\n- ${field}: ${data.errors[field].join(
+                      " "
+                    )}`;
+                  }
+                  alert(errorMessage);
+                } else {
+                  alert("Error: " + (data.error || "Failed to add watermark"));
+                }
+              }
+            })
+            .catch((error) => {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+              alert("Error: " + error);
+            });
+        });
+    </script>
+  </body>
+</html>
