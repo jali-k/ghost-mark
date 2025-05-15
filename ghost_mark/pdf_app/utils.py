@@ -10,8 +10,9 @@ from reportlab.lib.units import cm
 
 def email_to_number(email):
     """
-    Convert an email address to a 10-digit number that is reversible.
-    Uses a simple substitution and folding algorithm.
+    Convert the first 10 valid characters of an email to a 20-digit number.
+    Each character maps to a 2-digit number (01-40).
+    Skip any characters not in the mapping.
     """
     # Define a character set mapping
     char_map = {
@@ -60,57 +61,91 @@ def email_to_number(email):
     # Convert email to lowercase for consistent mapping
     email = email.lower()
 
-    # Convert each character to its numeric representation
-    number_str = ""
+    # Get the first 10 valid characters (skip invalid ones)
+    result = ""
+    encoded_chars = []
+
     for char in email:
         if char in char_map:
-            number_str += char_map[char]
-        else:
-            # For any unexpected character, use a default value
-            number_str += "00"
+            if len(encoded_chars) < 10:  # Only take the first 10 valid characters
+                encoded_chars.append(char)
+                result += char_map[char]  # Take both digits this time
 
-    # Apply a folding technique to get exactly 10 digits
-    # If too long, fold and add; if too short, pad
-    result = ""
-    if len(number_str) > 10:
-        # Fold the string by adding pairs of digits modulo 10
-        for i in range(0, len(number_str) - 1, 2):
-            if i < 20:  # Only process the first 20 characters (10 pairs)
-                sum_val = (
-                    int(number_str[i]) + int(number_str[len(number_str) - i - 1])
-                ) % 10
-                result += str(sum_val)
-    else:
-        # If the string is too short, just pad with zeros
-        result = number_str + "0" * (10 - len(number_str))
+    # Pad if necessary to ensure we have exactly 20 digits
+    result = result + "00" * (10 - len(result) // 2)
 
-    # Ensure we have exactly 10 digits
-    result = result[:10]
-    print(f"Email: {email}, Number: {result}")  # Debugging output
+    # Ensure we have exactly 20 digits
+    result = result[:20]
 
-    return result
+    return result, encoded_chars
 
 
 def number_to_email(number_str):
     """
-    Reverses the email_to_number function to get the original email.
-    This is just a stub - in a real application, you would need to store
-    the original email or use a more sophisticated reversible algorithm.
+    Decode the 20-digit number back to the original 10 characters of the email.
+    Takes 2 digits at a time to map back to characters.
     """
-    # In a real application, you might store the email-number mapping in a database
-    # Here we're just demonstrating that the concept is possible
-    # You could implement a more sophisticated algorithm based on your needs
+    # Define the reverse character mapping
+    char_map = {
+        "01": "a",
+        "02": "b",
+        "03": "c",
+        "04": "d",
+        "05": "e",
+        "06": "f",
+        "07": "g",
+        "08": "h",
+        "09": "i",
+        "10": "j",
+        "11": "k",
+        "12": "l",
+        "13": "m",
+        "14": "n",
+        "15": "o",
+        "16": "p",
+        "17": "q",
+        "18": "r",
+        "19": "s",
+        "20": "t",
+        "21": "u",
+        "22": "v",
+        "23": "w",
+        "24": "x",
+        "25": "y",
+        "26": "z",
+        "27": ".",
+        "28": "@",
+        "29": "_",
+        "30": "-",
+        "31": "0",
+        "32": "1",
+        "33": "2",
+        "34": "3",
+        "35": "4",
+        "36": "5",
+        "37": "6",
+        "38": "7",
+        "39": "8",
+        "40": "9",
+    }
 
-    # This function would retrieve the original email from storage
-    # or use the reverse of your conversion algorithm
+    # Decode each pair of digits back to its original character
+    decoded_email = ""
 
-    # For demonstration purposes, we'll return a placeholder
-    return f"original_email_for_{number_str}@example.com"
+    # Process the string 2 digits at a time
+    for i in range(0, len(number_str), 2):
+        if i + 1 < len(number_str):  # Ensure we have 2 digits
+            pair = number_str[i : i + 2]
+            decoded_email += char_map.get(pair, "?")
+
+    return decoded_email
 
 
 def add_border_to_pdf(input_pdf, output_pdf, email_number):
     """
     Add a border to each page of the PDF with indentations based on the email number.
+    Uses 1/16 of page height and adds dots to count steps.
+    Processes the 20-digit number 2 digits at a time for 10 pairs.
     """
     reader = PdfReader(input_pdf)
     writer = PdfWriter()
@@ -128,14 +163,25 @@ def add_border_to_pdf(input_pdf, output_pdf, email_number):
         margin = 36  # 0.5 inch margin
         border_width = 1  # 1 point border width
 
-        # Convert email number to list of digits
-        digits = [int(d) for d in email_number]
+        # Process email number as pairs of digits (01-40)
+        digit_pairs = []
+        for i in range(0, len(email_number), 2):
+            if i + 1 < len(email_number):
+                pair = email_number[i : i + 2]
+                digit_pairs.append(int(pair))
+            else:
+                digit_pairs.append(0)  # Default for incomplete pair
+
+        # Make sure we have 10 pairs
+        while len(digit_pairs) < 10:
+            digit_pairs.append(0)
+        digit_pairs = digit_pairs[:10]  # Take only the first 10 pairs
+
+        print("Processing digit pairs:", digit_pairs)  # Debug print
 
         # Calculate parameters for the stepped border
         right_border_height = page_height - 2 * margin
-        step_section_height = (
-            right_border_height / 8
-        )  # top 1/8 of right border - UPDATED
+        step_section_height = right_border_height / 16  # Using 1/16 of height
         segment_height = step_section_height / 10  # height of each step segment
 
         # Draw the horizontal borders (top and bottom)
@@ -148,8 +194,8 @@ def add_border_to_pdf(input_pdf, output_pdf, email_number):
         # Draw the left border
         c.line(margin, margin, margin, page_height - margin)
 
-        # Draw the right border with steps at the top 1/8
-        # First, draw the straight part (bottom 7/8)
+        # Draw the right border with steps at the top 1/16
+        # First, draw the straight part (bottom 15/16)
         c.line(
             page_width - margin,
             margin,
@@ -157,13 +203,29 @@ def add_border_to_pdf(input_pdf, output_pdf, email_number):
             page_height - margin - step_section_height,
         )
 
-        # Now draw the stepped part (top 1/8)
+        # Define a smaller step size for up to 40 steps
+        step_size = 0.125 * cm  # 1/4 of 0.5cm
+
+        # Draw reference dots at every 5 steps (5, 10, 15, etc)
+        dot_size = 0.75  # Very tiny dots
+        for step in range(5, 41, 5):
+            dot_x = page_width - margin - step * step_size
+            dot_y = page_height - margin + 5
+            c.circle(dot_x, dot_y, dot_size, fill=1)
+            c.setFont("Helvetica", 4)
+            c.drawString(dot_x - 2, dot_y + 5, str(step))
+
+        # Now draw the stepped part (top 1/16)
         right_x = page_width - margin
         current_y = page_height - margin - step_section_height
 
+        # Process each digit pair (total of 10 pairs)
         for i in range(10):
-            # Calculate indentation based on the digit (half cm per unit)
-            indent = digits[i] * 0.5 * cm
+            # Get the value from the digit pair (01-40)
+            pair_value = digit_pairs[i]
+
+            # Calculate indentation based on the digit pair
+            indent = pair_value * step_size
 
             # Draw the horizontal part of the step
             if i > 0:  # Only for segments after the first one
@@ -175,12 +237,20 @@ def add_border_to_pdf(input_pdf, output_pdf, email_number):
             # Draw the vertical part of the step
             c.line(right_x - indent, current_y, right_x - indent, end_y)
 
+            # Draw a dot for this specific step position
+            dot_x = right_x - indent
+            dot_y = page_height - margin + 10
+            c.circle(dot_x, dot_y, 1.5, fill=1)
+
+            # Add the digit pair value
+            c.setFont("Helvetica", 6)
+            c.drawString(dot_x - 3, dot_y + 8, str(pair_value))
+
             # Update for the next segment
             current_y = end_y
             prev_indent = indent
 
         # Draw a horizontal line at the end of stepping to complete the border
-        # This connects the last step to the right edge
         c.line(right_x - prev_indent, current_y, right_x, current_y)
 
         # Connect the right edge up to the top border

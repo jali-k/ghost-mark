@@ -44,7 +44,8 @@ def add_border(request):
             email = form.cleaned_data["email"]
 
             # Convert email to a 10-digit number
-            email_number = email_to_number(email)
+            email_number, _ = email_to_number(email)
+            print(f"Email converted to number: {email_number}")
 
             # Create a unique filename for the output PDF
             output_filename = f"border_{uuid.uuid4().hex}.pdf"
@@ -85,7 +86,7 @@ def recover_email(request):
         # Extract the number from request
         number = request.POST.get("number", "")
 
-        if number and len(number) == 10 and number.isdigit():
+        if number and len(number) == 20 and number.isdigit():
             # Recover the email
             email = number_to_email(number)
             return HttpResponse(f"The recovered email is: {email}")
