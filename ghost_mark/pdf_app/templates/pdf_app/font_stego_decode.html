@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Font Steganography - Decode Message</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+      }
+      .nav-links {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="file"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .result-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .decoded-message {
+        background-color: #e8f5e8;
+        border: 2px solid #4caf50;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 15px 0;
+        font-family: monospace;
+        font-size: 16px;
+        word-break: break-all;
+      }
+      .binary-data {
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        font-family: monospace;
+        font-size: 12px;
+        word-break: break-all;
+        max-height: 200px;
+        overflow-y: auto;
+      }
+      .error-message {
+        color: #d32f2f;
+        background-color: #ffebee;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 20px;
+        border-left: 4px solid #d32f2f;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .success-header {
+        color: #2e7d32;
+        margin-bottom: 15px;
+      }
+      .binary-toggle {
+        background-color: #2196f3;
+        color: white;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-bottom: 10px;
+      }
+      .binary-toggle:hover {
+        background-color: #1976d2;
+      }
+      .binary-section {
+        display: none;
+      }
+      .stats {
+        background-color: #fff3e0;
+        border: 1px solid #ff9800;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+      }
+      .page-message-container {
+        border-left: 3px solid #4caf50;
+        padding-left: 15px;
+        margin-left: 10px;
+      }
+      .page-message-container h5 {
+        margin: 0 0 5px 0;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Font Steganography - Decode Message</h1>
+
+    <div class="nav-links">
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:font_stego_encode' %}">Encode Message</a> |
+      <a href="{% url 'pdf_app:font_stego_decode' %}">Decode Message</a>
+    </div>
+
+    <div class="form-container">
+      <p>
+        Upload a PDF file that contains a hidden message created using font
+        steganography on the last page to extract the secret message.
+      </p>
+
+      <form method="post" enctype="multipart/form-data" id="decodeForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_pdf_file">PDF File with Hidden Message:</label>
+          <input
+            type="file"
+            name="pdf_file"
+            id="id_pdf_file"
+            accept=".pdf"
+            required
+          />
+          <small
+            >Select the PDF file that contains a hidden message on the last
+            page</small
+          >
+        </div>
+
+        <button type="submit" id="submit-btn">Decode Message</button>
+      </form>
+    </div>
+
+    {% if page_messages %}
+    <div class="result-container">
+      <h3 class="success-header">✅ Message Successfully Decoded!</h3>
+
+      <div class="stats">
+        <strong>Extraction Statistics:</strong><br />
+        • Total pages in document: {{ total_pages }}<br />
+        • Binary data length: {{ binary_data|length }} bits<br />
+        • Hidden message found on: Last page<br />
+        • Pages with messages: {{ page_messages|length }}
+      </div>
+
+      <h4>Decoded Messages by Page:</h4>
+
+      <!-- Show each page's message separately -->
+      {% for page_name, message in page_messages.items %}
+      <div class="page-message-container" style="margin-bottom: 15px">
+        <h5 style="color: #2e7d32; margin-bottom: 5px">{{ page_name }}:</h5>
+        <div class="decoded-message">{{ message }}</div>
+      </div>
+      {% endfor %}
+
+      <button
+        type="button"
+        class="binary-toggle"
+        onclick="toggleBinaryData()"
+        id="binary-toggle-btn"
+      >
+        Show Binary Data
+      </button>
+
+      <div class="binary-section" id="binary-section">
+        <h4>Raw Binary Data (Last Page):</h4>
+        <div class="binary-data">{{ binary_data }}</div>
+        <small
+          >This is the raw binary data extracted from font sizes: 7pt = 0, 9pt =
+          1</small
+        >
+      </div>
+    </div>
+    {% endif %} {% if error %}
+    <div class="error-message"><strong>Error:</strong> {{ error }}</div>
+    {% endif %}
+
+    <div class="info-container">
+      <h3>How Font Steganography Decoding Works</h3>
+      <p>
+        The decoding process analyzes the font sizes in the footer area of your
+        PDF's last page:
+      </p>
+      <ul>
+        <li>
+          Extracts text elements from the document footer on the last page
+        </li>
+        <li>Identifies characters with 7pt font size as binary "0"</li>
+        <li>Identifies characters with 9pt font size as binary "1"</li>
+        <li>Ignores space characters (they use 8pt and don't encode data)</li>
+        <li>
+          Ignores cover story text (8pt gray text explaining font variations)
+        </li>
+        <li>Converts the resulting binary string back to ASCII text</li>
+      </ul>
+
+      <h4>Requirements for Successful Decoding</h4>
+      <ul>
+        <li>
+          PDF must contain text encoded with font steganography on the last page
+        </li>
+        <li>Text must be in the footer area of the last page</li>
+        <li>Font sizes must be exactly 7pt or 9pt for data characters</li>
+        <li>Binary data must form complete 8-bit bytes</li>
+      </ul>
+
+      <h4>Troubleshooting</h4>
+      <p>
+        If decoding fails, the PDF might not contain steganographic data on the
+        last page, or the encoding might have been altered. Only PDFs created
+        with our encoding tool can be reliably decoded.
+      </p>
+    </div>
+
+    <script>
+      // Form submission handling
+      document
+        .getElementById("decodeForm")
+        .addEventListener("submit", function (e) {
+          const submitBtn = document.getElementById("submit-btn");
+          const originalText = submitBtn.textContent;
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Decoding...";
+
+          // Re-enable button after 30 seconds as fallback
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }, 30000);
+        });
+
+      // Binary data toggle functionality
+      function toggleBinaryData() {
+        const section = document.getElementById("binary-section");
+        const button = document.getElementById("binary-toggle-btn");
+
+        if (section.style.display === "none" || section.style.display === "") {
+          section.style.display = "block";
+          button.textContent = "Hide Binary Data";
+        } else {
+          section.style.display = "none";
+          button.textContent = "Show Binary Data";
+        }
+      }
+
+      // Copy to clipboard functionality
+      function copyToClipboard(text) {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            alert("Copied to clipboard!");
+          })
+          .catch((err) => {
+            console.error("Failed to copy: ", err);
+          });
+      }
+
+      // Add copy button to decoded message if it exists
+      document.addEventListener("DOMContentLoaded", function () {
+        const decodedDiv = document.querySelector(".decoded-message");
+        if (decodedDiv) {
+          const copyBtn = document.createElement("button");
+          copyBtn.textContent = "Copy Message";
+          copyBtn.style.cssText = `
+                    background-color: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 5px 10px;
+                    border-radius: 3px;
+                    cursor: pointer;
+                    font-size: 12px;
+                    margin-top: 10px;
+                `;
+          copyBtn.onclick = () => copyToClipboard(decodedDiv.textContent);
+          decodedDiv.parentNode.insertBefore(copyBtn, decodedDiv.nextSibling);
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Font Steganography - Encode Message</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #333;
+      }
+      .nav-links {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="file"],
+      input[type="text"],
+      textarea {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      textarea {
+        resize: vertical;
+        min-height: 120px;
+      }
+      small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .error-message {
+        color: #d32f2f;
+        background-color: #ffebee;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        border-left: 4px solid #d32f2f;
+      }
+      .calculation-box {
+        background-color: #f0f8ff;
+        border: 1px solid #4caf50;
+        padding: 15px;
+        border-radius: 5px;
+        margin-top: 10px;
+      }
+      .char-counter {
+        font-size: 14px;
+        color: #666;
+        text-align: right;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Font Steganography - Encode Message</h1>
+
+    <div class="nav-links">
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:font_stego_encode' %}">Encode Message</a> |
+      <a href="{% url 'pdf_app:font_stego_decode' %}">Decode Message</a>
+    </div>
+
+    <div class="form-container">
+      <p>
+        Hide a secret message in a PDF using font steganography. The message
+        will be embedded using different font sizes that are nearly
+        imperceptible to the human eye.
+      </p>
+
+      {% if error %}
+      <div class="error-message">{{ error }}</div>
+      {% endif %}
+
+      <form method="post" enctype="multipart/form-data" id="encodeForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_pdf_file">PDF File:</label>
+          <input
+            type="file"
+            name="pdf_file"
+            id="id_pdf_file"
+            accept=".pdf"
+            required
+          />
+          <small>Select the PDF file to embed the secret message in</small>
+        </div>
+
+        <div class="form-group">
+          <label for="id_secret_message">Secret Message:</label>
+          <input
+            type="text"
+            name="secret_message"
+            id="id_secret_message"
+            placeholder="Enter your secret message"
+            maxlength="200"
+            required
+          />
+          <div class="char-counter">
+            <span id="message-length">0</span> / 200 characters
+          </div>
+          <small>The message to hide in the PDF (maximum 200 characters)</small>
+        </div>
+
+        <div class="form-group">
+          <label for="id_cover_text">Cover Text:</label>
+          <textarea
+            name="cover_text"
+            id="id_cover_text"
+            rows="6"
+            placeholder="Enter cover text that will be visible on the PDF. This text should be long enough to hide your message..."
+            required
+          ></textarea>
+          <div class="char-counter">
+            <span id="cover-length">0</span> characters
+            (<span id="non-space-count">0</span> non-space)
+          </div>
+          <small
+            >Cover text that will be displayed. Must have enough non-space
+            characters to hide your message.</small
+          >
+        </div>
+
+        <div class="calculation-box" id="calculation-display">
+          <strong>Requirements Check:</strong>
+          <div id="requirements-text">
+            Enter your secret message and cover text to see if they are
+            compatible.
+          </div>
+        </div>
+
+        <button type="submit" id="submit-btn">Encode Message</button>
+      </form>
+    </div>
+
+    <div class="info-container">
+      <h3>How Font Steganography Works</h3>
+      <p>
+        Font steganography hides information by varying the font sizes of
+        characters in text:
+      </p>
+      <ul>
+        <li>Each character in your secret message is converted to binary</li>
+        <li>Binary "0" bits are encoded using 7pt font size</li>
+        <li>Binary "1" bits are encoded using 10pt font size</li>
+        <li>Space characters use 8pt font size and don't encode data</li>
+        <li>The cover text is placed in the footer area of each page</li>
+      </ul>
+
+      <h4>Requirements</h4>
+      <p>
+        Your cover text must have enough non-space characters to hide your
+        message. Each character in your secret message requires 8 bits (8
+        non-space characters in the cover text).
+      </p>
+
+      <h4>Security Note</h4>
+      <p>
+        While the font size differences are subtle, they can be detected by
+        analyzing the PDF's text properties. This method is best for scenarios
+        where casual observers won't examine the document structure.
+      </p>
+    </div>
+
+    <script>
+      // Character counters and validation
+      const secretMessageInput = document.getElementById("id_secret_message");
+      const coverTextInput = document.getElementById("id_cover_text");
+      const messageLengthSpan = document.getElementById("message-length");
+      const coverLengthSpan = document.getElementById("cover-length");
+      const nonSpaceCountSpan = document.getElementById("non-space-count");
+      const requirementsDiv = document.getElementById("requirements-text");
+      const submitBtn = document.getElementById("submit-btn");
+
+      function updateCounters() {
+        const messageLength = secretMessageInput.value.length;
+        const coverText = coverTextInput.value;
+        const coverLength = coverText.length;
+        const nonSpaceCount = coverText.replace(/\s/g, "").length;
+
+        // Update counters
+        messageLengthSpan.textContent = messageLength;
+        coverLengthSpan.textContent = coverLength;
+        nonSpaceCountSpan.textContent = nonSpaceCount;
+
+        // Calculate requirements
+        const requiredBits = messageLength * 8;
+        const hasEnoughChars = requiredBits <= nonSpaceCount;
+
+        // Update requirements display
+        if (messageLength === 0) {
+          requirementsDiv.innerHTML =
+            "Enter your secret message to see requirements.";
+          submitBtn.disabled = true;
+        } else if (coverLength === 0) {
+          requirementsDiv.innerHTML = `
+                    <span style="color: #ff5722;">
+                        Your message needs ${requiredBits} non-space characters in cover text. 
+                        Please enter cover text.
+                    </span>
+                `;
+          submitBtn.disabled = true;
+        } else if (hasEnoughChars) {
+          requirementsDiv.innerHTML = `
+                    <span style="color: #2e7d32;">
+                        ✅ Perfect! Your message (${requiredBits} bits) can be hidden in your cover text (${nonSpaceCount} non-space characters).
+                        Surplus: ${nonSpaceCount - requiredBits} characters.
+                    </span>
+                `;
+          submitBtn.disabled = false;
+        } else {
+          const shortage = requiredBits - nonSpaceCount;
+          requirementsDiv.innerHTML = `
+                    <span style="color: #d32f2f;">
+                        ❌ Cover text too short! You need ${shortage} more non-space characters.
+                        Required: ${requiredBits}, Available: ${nonSpaceCount}
+                    </span>
+                `;
+          submitBtn.disabled = true;
+        }
+      }
+
+      // Add event listeners
+      secretMessageInput.addEventListener("input", updateCounters);
+      coverTextInput.addEventListener("input", updateCounters);
+
+      // Initial update
+      updateCounters();
+
+      // Form submission handling
+      document
+        .getElementById("encodeForm")
+        .addEventListener("submit", function (e) {
+          const submitBtn = document.getElementById("submit-btn");
+          const originalText = submitBtn.textContent;
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Encoding...";
+
+          // Re-enable button after 30 seconds as fallback
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+          }, 30000);
+        });
+    </script>
+  </body>
+</html>

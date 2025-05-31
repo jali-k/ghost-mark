@@ -6,6 +6,10 @@ from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.units import cm
+import fitz  # PyMuPDF
+
+# Global font size mapping for binary encoding
+font_size_map = {"0": 7, "1": 9}
 
 
 def email_to_number(email):
@@ -522,3 +526,416 @@ def process_qr_code(qr_data):
     except Exception as e:
         # If decoding fails, raise an error
         raise ValueError(f"Failed to decode QR code data: {str(e)}")
+
+
+# Add these exact functions from your scripts:
+
+
+def string_to_binary(message):
+    """
+    Converts a string message to binary representation
+
+    Args:
+        message: Input string to convert
+
+    Returns:
+        Binary string representation
+    """
+    binary_result = ""
+    for char in message:
+        # Convert each character to 8-bit binary
+        ascii_value = ord(char)
+        binary_char = format(ascii_value, "08b")
+        binary_result += binary_char
+
+    return binary_result
+
+
+def binary_to_string(binary_data):
+    """
+    Converts binary string back to original message
+
+    Args:
+        binary_data: Binary string to convert
+
+    Returns:
+        Original string message
+    """
+    if len(binary_data) % 8 != 0:
+        print(f"⚠️  Warning: Binary length ({len(binary_data)}) not divisible by 8")
+        # Pad with zeros to make it divisible by 8
+        binary_data = binary_data.ljust((len(binary_data) + 7) // 8 * 8, "0")
+
+    result = ""
+    for i in range(0, len(binary_data), 8):
+        byte = binary_data[i : i + 8]
+        if len(byte) == 8:
+            ascii_value = int(byte, 2)
+            if 32 <= ascii_value <= 126:  # Printable ASCII range
+                result += chr(ascii_value)
+            else:
+                print(f"⚠️  Non-printable ASCII value: {ascii_value} from byte {byte}")
+                break
+
+    return result
+
+
+def encode_message_in_pdf_font_stego(input_pdf, output_pdf, secret_message, cover_text):
+    """
+    Improved encoding function with separate cover story for plausible deniability
+
+    Flow:
+    1. Add cover story explanation (8pt font - doesn't encode data)
+    2. Add cover text with hidden message encoded via font variations (7pt/9pt)
+
+    NOW: Only adds to the LAST PAGE for better steganography
+    """
+    # Convert secret message to binary
+    binary_data = string_to_binary(secret_message)
+
+    print(f"🔐 SECRET MESSAGE: '{secret_message}'")
+    print(f"🔢 BINARY REPRESENTATION: {binary_data}")
+    print(f"📏 Binary length: {len(binary_data)} bits")
+    print(f"📄 Cover text: '{cover_text}'")
+    print(f"📏 Cover text length: {len(cover_text)} characters")
+
+    # Count non-space characters in cover text
+    non_space_chars = [char for char in cover_text if char != " "]
+    print(f"📏 Non-space characters in cover: {len(non_space_chars)}")
+
+    # Check if we have enough cover text
+    if len(binary_data) > len(non_space_chars):
+        print(
+            f"⚠️  WARNING: Message too long! Need {len(binary_data)} chars, have {len(non_space_chars)}"
+        )
+        return {
+            "success": False,
+            "error": f"Cover text too short! Need {len(binary_data)} characters, have {len(non_space_chars)}. Please provide longer cover text.",
+        }
+    else:
+        print(f"✅ Cover text is sufficient for message")
+
+    # Open the PDF
+    try:
+        doc = fitz.open(input_pdf)
+        print(f"\n✅ Opened PDF: {input_pdf}")
+        print(f"📄 Pages: {len(doc)}")
+    except Exception as e:
+        print(f"❌ Error opening PDF: {e}")
+        return {"success": False, "error": f"Error opening PDF: {e}"}
+
+    space_font_size = 8.0  # Default size for spaces AND cover story
+
+    # 🎭 COVER STORY OPTIONS - Short and realistic
+    cover_stories = ["Read at your own pace."]
+
+    import random
+
+    selected_cover_story = random.choice(cover_stories)
+
+    # 🎯 PROCESS ONLY THE LAST PAGE
+    last_page_num = len(doc) - 1
+    page = doc[last_page_num]
+    page_rect = page.rect
+
+    print(f"\n--- Encoding on LAST Page ({last_page_num + 1}) ---")
+
+    # Calculate footer position - start higher to accommodate cover story
+    footer_y = page_rect.height - 60
+    start_x = 50
+
+    # 🎭 STEP 1: ADD COVER STORY FIRST (8pt font - no encoding)
+    print(f"🎭 Adding cover story: {selected_cover_story}")
+    cover_story_point = fitz.Point(start_x, footer_y)
+    page.insert_text(
+        cover_story_point,
+        selected_cover_story,
+        fontsize=8.0,  # Use default font size - doesn't encode data
+        color=(0.3, 0.3, 0.3),  # Dark gray, subtle but readable
+    )
+
+    # Move down for the main encoded content
+    footer_y += 18  # More space between cover story and encoded text
+
+    # 🔤 STEP 2: PROCESS COVER TEXT WITH HIDDEN MESSAGE ENCODING
+    text_blocks = []
+    binary_index = 0
+    current_word = ""
+    current_font_sizes = []
+
+    # Process each character and group into words for better spacing
+    for char_index, char in enumerate(cover_text):
+        if char == " ":
+            # End of word - add the current word if it exists
+            if current_word:
+                text_blocks.append(
+                    {
+                        "text": current_word,
+                        "font_sizes": current_font_sizes.copy(),
+                        "type": "word",
+                    }
+                )
+                current_word = ""
+                current_font_sizes = []
+
+            # Add space (uses default 8pt - doesn't encode data)
+            text_blocks.append(
+                {"text": " ", "font_sizes": [space_font_size], "type": "space"}
+            )
+        else:
+            # Add character to current word
+            current_word += char
+
+            # 🔐 ENCODE: Determine font size based on binary data
+            if binary_index < len(binary_data):
+                bit = binary_data[binary_index]
+                font_size = font_size_map[bit]  # 7pt for '0', 9pt for '1'
+                binary_index += 1
+                print(f"  Encoding '{char}' -> bit '{bit}' -> {font_size}pt")
+            else:
+                # After message is encoded, use default size
+                font_size = space_font_size
+
+            current_font_sizes.append(font_size)
+
+    # Don't forget the last word
+    if current_word:
+        text_blocks.append(
+            {"text": current_word, "font_sizes": current_font_sizes, "type": "word"}
+        )
+
+    # 🎨 STEP 3: INSERT ENCODED TEXT WITH NATURAL SPACING
+    current_x = start_x
+    line_height = 12
+
+    for block in text_blocks:
+        text = block["text"]
+        font_sizes = block["font_sizes"]
+
+        if block["type"] == "space":
+            # Space uses default font - no encoding
+            space_width = 3
+            current_x += space_width
+        else:
+            # Word with encoded characters
+            for i, char in enumerate(text):
+                font_size = font_sizes[i] if i < len(font_sizes) else space_font_size
+
+                point = fitz.Point(current_x, footer_y)
+                page.insert_text(point, char, fontsize=font_size, color=(0, 0, 0))
+
+                # Better character width calculation
+                base_width = 4.5
+                size_factor = font_size / 8.0
+                char_width = base_width * size_factor
+
+                # Adjust for character types
+                if char in "il|!":
+                    char_width *= 0.5
+                elif char in "mwM":
+                    char_width *= 1.3
+
+                current_x += char_width
+
+            # Small gap after each word
+            current_x += 1
+
+        # Line wrapping
+        if current_x > page_rect.width - 100:
+            current_x = start_x
+            footer_y += line_height
+
+    print(f"✅ Encoded {binary_index} bits on the last page")
+
+    # Save the PDF
+    try:
+        doc.save(output_pdf)
+        print(f"\n✅ Saved steganographic PDF with cover story on last page")
+        print(f"🎭 Cover story: {selected_cover_story}")
+        doc.close()
+        return {
+            "success": True,
+            "message": f"Successfully encoded {len(binary_data)} bits on the last page with plausible deniability",
+            "cover_story": selected_cover_story,
+        }
+    except Exception as e:
+        print(f"❌ Error saving PDF: {e}")
+        doc.close()
+        return {"success": False, "error": f"Error saving PDF: {e}"}
+
+
+def decode_message_from_pdf_font_stego(pdf_path):
+    """
+    UPDATED: Now focuses on LAST PAGE for better steganography
+    Decodes hidden message from font size variations on the last page only
+    """
+    try:
+        doc = fitz.open(pdf_path)
+        print(f"📄 Analyzing PDF: {pdf_path}")
+        print(f"📚 Total pages: {len(doc)}")
+        print("🎯 Focusing on LAST PAGE for steganographic data")
+        print("=" * 60)
+    except Exception as e:
+        print(f"❌ Error opening PDF: {e}")
+        return {"success": False, "error": f"Error opening PDF: {e}"}
+
+    # Store messages per page (but focus on last page)
+    page_messages = {}
+    all_binary_data = ""
+
+    # CAPTURE TOTAL PAGES BEFORE CLOSING THE DOCUMENT
+    total_pages = len(doc)
+
+    # 🎯 PROCESS ONLY THE LAST PAGE (where steganographic data is stored)
+    last_page_num = total_pages - 1
+    page = doc[last_page_num]
+    page_rect = page.rect
+
+    print(f"\n📖 LAST PAGE ({last_page_num + 1}) - Looking for hidden message")
+    print("-" * 40)
+
+    # Binary text for the last page
+    page_binary_text = ""
+
+    # Get text with formatting information
+    text_dict = page.get_text("dict")
+
+    # Organize text by areas
+    areas = {"header": [], "body": [], "footer": []}
+
+    # Process each text block
+    for block in text_dict["blocks"]:
+        if block.get("type") == 0:  # Text block only
+            block_bbox = block["bbox"]
+            block_rect = fitz.Rect(block_bbox)
+
+            # Classify the area
+            area = _classify_text_area(block_rect, page_rect)
+
+            # Process lines and spans
+            for line in block["lines"]:
+                for span in line["spans"]:
+                    text = span["text"].strip()
+
+                    # Skip empty text
+                    if not text:
+                        continue
+
+                    font_size = span["size"]
+                    font_name = span.get("font", "Unknown")
+
+                    # Clean up font name
+                    clean_font_name = _clean_font_name(font_name)
+
+                    # Add to appropriate area
+                    areas[area].append(
+                        {
+                            "text": text,
+                            "font_name": clean_font_name,
+                            "font_size": font_size,
+                        }
+                    )
+
+    # Process footer area (where steganographic data is stored)
+    print(f"\n🦶 FOOTER ANALYSIS")
+    footer_elements = areas["footer"]
+
+    if not footer_elements:
+        print("   No text found in footer area.")
+        page_messages[f"Page {last_page_num + 1}"] = "No steganographic data found"
+    else:
+        for i, element in enumerate(footer_elements, 1):
+            # Truncate text if too long for display
+            display_text = (
+                element["text"]
+                if len(element["text"]) <= 50
+                else element["text"][:47] + "..."
+            )
+
+            print(f'   {i:2d}. Text: "{display_text}"')
+            print(
+                f"       Font: {element['font_name']} | Size: {element['font_size']:.1f}pt"
+            )
+
+            # Check if this is our cover story (8pt) or encoded data (7pt/9pt)
+            if element["font_size"] == 8.0:
+                print("       → Cover story text (8pt) - not encoded")
+                continue
+            elif element["font_size"] == font_size_map["0"]:  # 7pt
+                # Convert text to binary representation (0s)
+                print("       → Encoding '0' bits")
+                temp_text = element["text"].replace(" ", "")
+                page_binary_text += "0" * len(temp_text)
+                print(f"       → Added {len(temp_text)} zero bits")
+            elif element["font_size"] == font_size_map["1"]:  # 9pt
+                # Convert text to binary representation (1s)
+                print("       → Encoding '1' bits")
+                temp_text = element["text"].replace(" ", "")
+                page_binary_text += "1" * len(temp_text)
+                print(f"       → Added {len(temp_text)} one bits")
+            else:
+                print(f"       → Unknown font size: {element['font_size']:.1f}pt")
+
+    # Decode the last page's message
+    if page_binary_text:
+        page_message = binary_to_string(page_binary_text)
+        page_messages[f"Page {last_page_num + 1}"] = page_message
+        all_binary_data = page_binary_text
+        print(f"🔓 DECODED MESSAGE: '{page_message}'")
+    else:
+        page_messages[f"Page {last_page_num + 1}"] = "No steganographic data found"
+
+    # CLOSE THE DOCUMENT
+    doc.close()
+
+    if len(all_binary_data) == 0:
+        return {
+            "success": False,
+            "error": "No steganographic data found on the last page!",
+        }
+
+    return {
+        "success": True,
+        "page_messages": page_messages,  # Dictionary of page messages
+        "binary_data": all_binary_data,  # Binary data from last page
+        "total_pages": total_pages,
+    }
+
+
+def _classify_text_area(block_rect, page_rect):
+    """
+    EXACT function from simplified_font_analyzer.py
+    Classify text area as header, body, or footer based on position
+    """
+    page_height = page_rect.height
+    block_top = block_rect.y0
+    block_bottom = block_rect.y1
+
+    # Header: top 15% of page
+    if block_top < page_height * 0.15:
+        return "header"
+    # Footer: bottom 15% of page
+    elif block_bottom > page_height * 0.85:
+        return "footer"
+    else:
+        return "body"
+
+
+def _clean_font_name(font_name):
+    """
+    EXACT function from simplified_font_analyzer.py
+    Clean up font name by removing technical suffixes
+    """
+    # Remove common technical suffixes
+    suffixes_to_remove = ["+", "-Bold", "-Italic", "-BoldItalic", "-Regular"]
+
+    clean_name = font_name
+    for suffix in suffixes_to_remove:
+        if suffix in clean_name:
+            clean_name = clean_name.split(suffix)[0]
+
+    # Remove everything after the first '+' (common in PDF font names)
+    if "+" in clean_name:
+        clean_name = clean_name.split("+")[1] if "+" in clean_name else clean_name
+
+    return clean_name.strip()
