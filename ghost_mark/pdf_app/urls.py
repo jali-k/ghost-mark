@@ -21,4 +21,7 @@ urlpatterns = [
     # New QR code routes
     path("add-qr-code/", views.add_qr_code, name="add_qr_code"),
     path("scan-qr-code/", views.scan_qr_code, name="scan_qr_code"),
+    # Font steganography routes
+    path("font-stego-encode/", views.font_stego_encode, name="font_stego_encode"),
+    path("font-stego-decode/", views.font_stego_decode, name="font_stego_decode"),
 ]

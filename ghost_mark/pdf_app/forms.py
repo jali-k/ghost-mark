@@ -99,3 +99,67 @@ class QRCodeScanForm(forms.Form):
             )
 
         return cleaned_data
+
+
+class FontStegoEncodeForm(forms.Form):
+    """Form for encoding messages using font steganography."""
+
+    pdf_file = forms.FileField(
+        label="Upload PDF",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": ".pdf"}),
+        help_text="Select the PDF file to add hidden message to",
+    )
+
+    secret_message = forms.CharField(
+        label="Secret Message",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Enter your secret message",
+                "maxlength": "200",
+            }
+        ),
+        max_length=200,
+        help_text="Message to hide in the PDF (max 200 characters)",
+    )
+
+    cover_text = forms.CharField(
+        label="Cover Text",
+        widget=forms.Textarea(
+            attrs={
+                "class": "form-control",
+                "rows": "6",
+                "placeholder": "Enter cover text (should be long enough to hide your message)...",
+            }
+        ),
+        help_text="Cover text that will be visible. Must have enough non-space characters to hide your message.",
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        secret_message = cleaned_data.get("secret_message")
+        cover_text = cleaned_data.get("cover_text")
+
+        if secret_message and cover_text:
+            # Calculate required characters
+            message_bits = len(secret_message) * 8
+            non_space_chars = len([char for char in cover_text if char != " "])
+
+            if message_bits > non_space_chars:
+                raise forms.ValidationError(
+                    f"Cover text is too short! Your message needs {message_bits} characters "
+                    f"but your cover text only has {non_space_chars} non-space characters. "
+                    f"Please add more text to the cover text field."
+                )
+
+        return cleaned_data
+
+
+class FontStegoDecodeForm(forms.Form):
+    """Form for decoding messages from font steganography."""
+
+    pdf_file = forms.FileField(
+        label="Upload PDF with Hidden Message",
+        widget=forms.FileInput(attrs={"class": "form-control", "accept": ".pdf"}),
+        help_text="Select the PDF file that contains a hidden message",
+    )

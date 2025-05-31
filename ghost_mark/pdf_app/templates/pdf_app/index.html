@@ -65,6 +65,19 @@
         margin-bottom: 30px;
         color: #555;
       }
+
+      .new-feature {
+        background: linear-gradient(135deg, #e8f5e8, #f0fdf0);
+        border: 2px solid #4caf50;
+      }
+      .new-badge {
+        background-color: #ff5722;
+        color: white;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 12px;
+        font-weight: bold;
+      }
     </style>
   </head>
   <body>
@@ -75,18 +88,19 @@
 
     <div class="nav-links">
       <a href="{% url 'pdf_app:index' %}">Home</a> |
-      <a href="{% url 'pdf_app:add_border' %}">Add Border</a> |
-      <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
+      {% comment %} <a href="{% url 'pdf_app:add_border' %}">Add Border</a> | {% endcomment %}
+      {% comment %} <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> | {% endcomment %}
       <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
       <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a> |
       <a href="{% url 'pdf_app:add_qr_code' %}">Add QR Code</a> |
-      <a href="{% url 'pdf_app:scan_qr_code' %}">Scan QR Code</a>
+      <a href="{% url 'pdf_app:scan_qr_code' %}">Scan QR Code</a> |
+      <a href="{% url 'pdf_app:font_stego_encode' %}">Font Steganography</a>
     </div>
 
     <!-- Features Section -->
     <h2>Available Features</h2>
     <div class="features-container">
-      <div class="feature-card">
+      {% comment %} <div class="feature-card">
         <h3>Email Tracking Border</h3>
         <p>
           Add a unique border pattern to your PDF documents that encodes your
@@ -95,9 +109,9 @@
         <a href="{% url 'pdf_app:add_border' %}" class="link"
           >Add Tracking Border</a
         >
-      </div>
+      </div> {% endcomment %}
 
-      <div class="feature-card">
+      {% comment %} <div class="feature-card">
         <h3>Email Recovery</h3>
         <p>
           Extract and recover email addresses from PDFs with tracking borders,
@@ -106,7 +120,7 @@
         <a href="{% url 'pdf_app:recover_email' %}" class="link"
           >Recover Email</a
         >
-      </div>
+      </div> {% endcomment %}
 
       <div class="feature-card">
         <h3>Invisible Watermarking</h3>
@@ -129,27 +143,47 @@
           >Extract Watermark</a
         >
       </div>
-      
+
       <!-- New QR Code Features -->
       <div class="feature-card">
         <h3>QR Code Embedding</h3>
         <p>
-          Add a small QR code to the bottom-right corner of your PDF that encodes your
-          email address for easy document verification.
+          Add a small QR code to the bottom-right corner of your PDF that
+          encodes your email address for easy document verification.
         </p>
-        <a href="{% url 'pdf_app:add_qr_code' %}" class="link"
-          >Add QR Code</a
-        >
+        <a href="{% url 'pdf_app:add_qr_code' %}" class="link">Add QR Code</a>
       </div>
 
       <div class="feature-card">
         <h3>QR Code Scanner</h3>
         <p>
-          Scan or upload QR codes from our system to retrieve the original email address
-          associated with the document.
+          Scan or upload QR codes from our system to retrieve the original email
+          address associated with the document.
         </p>
-        <a href="{% url 'pdf_app:scan_qr_code' %}" class="link"
-          >Scan QR Code</a
+        <a href="{% url 'pdf_app:scan_qr_code' %}" class="link">Scan QR Code</a>
+      </div>
+
+      <!-- New Font Steganography Features -->
+      <div class="feature-card new-feature">
+        <h3>Font Steganography - Encode <span class="new-badge">NEW</span></h3>
+        <p>
+          Hide secret messages in PDF documents using subtle font size
+          variations that are invisible to the naked eye but can be detected by
+          analysis tools.
+        </p>
+        <a href="{% url 'pdf_app:font_stego_encode' %}" class="link"
+          >Encode Message</a
+        >
+      </div>
+
+      <div class="feature-card new-feature">
+        <h3>Font Steganography - Decode <span class="new-badge">NEW</span></h3>
+        <p>
+          Extract hidden messages from PDF documents that use font
+          steganography, revealing secrets embedded in font size variations.
+        </p>
+        <a href="{% url 'pdf_app:font_stego_decode' %}" class="link"
+          >Decode Message</a
         >
       </div>
     </div>
@@ -157,13 +191,13 @@
     <div class="info-container">
       <h3>How Our Tools Work</h3>
 
-      <h4>Email Tracking Border</h4>
+      {% comment %} <h4>Email Tracking Border</h4>
       <p>
         The Email Tracking Border feature converts your email to a 10-digit
         number using a reversible algorithm. This number is then used to create
         a unique border pattern on your PDF that can be visually identified or
         automatically extracted.
-      </p>
+      </p> {% endcomment %}
 
       <h4>Invisible Watermarking</h4>
       <p>
@@ -172,18 +206,32 @@
         special extraction tool. The watermark remains detectable even in
         screenshots or printouts of the document.
       </p>
-      
+
       <h4>QR Code Embedding</h4>
       <p>
-        The QR Code feature adds a small, unobtrusive QR code to the bottom-right corner of each page
-        in your PDF document. This QR code contains an encoded version of your email address that can be 
-        scanned with any QR code reader or our specialized scanner tool to verify the document's source.
+        The QR Code feature adds a small, unobtrusive QR code to the
+        bottom-right corner of each page in your PDF document. This QR code
+        contains an encoded version of your email address that can be scanned
+        with any QR code reader or our specialized scanner tool to verify the
+        document's source.
+      </p>
+
+      <h4>Font Steganography <span class="new-badge">NEW</span></h4>
+      <p>
+        Our Font Steganography feature hides secret messages by using different
+        font sizes for characters in cover text. Binary data is encoded using
+        7pt font for "0" bits and 10pt font for "1" bits. The variations are
+        subtle enough to appear normal to casual observers but can be detected
+        and decoded using our specialized tools. This method allows you to hide
+        important information in plain sight within any text content.
       </p>
 
       <h4>Document Security</h4>
       <p>
         These tools help you track document sharing, identify the source of
         leaked documents, and provide accountability in document distribution.
+        The variety of methods ensures you can choose the most appropriate
+        steganographic technique for your specific security needs.
       </p>
     </div>
   </body>

@@ -14,6 +14,8 @@ from .forms import (
     QRCodeScanForm,
     WatermarkForm,
     ExtractWatermarkForm,
+    FontStegoEncodeForm,
+    FontStegoDecodeForm,
 )
 from .utils import (
     email_to_number,
@@ -22,6 +24,8 @@ from .utils import (
     add_qr_code_to_pdf,
     generate_qr_code,
     process_qr_code,
+    encode_message_in_pdf_font_stego,
+    decode_message_from_pdf_font_stego,
 )
 
 # Import the watermark service
@@ -359,3 +363,133 @@ def scan_qr_code(request):
     context = {"form": form, "result": result, "error": error}
 
     return render(request, "pdf_app/scan_qr_code.html", context)
+
+
+def font_stego_encode(request):
+    """View for encoding messages using font steganography."""
+    if request.method == "POST":
+        form = FontStegoEncodeForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Get the uploaded PDF and form data
+            pdf_file = request.FILES["pdf_file"]
+            secret_message = form.cleaned_data["secret_message"]
+            cover_text = form.cleaned_data["cover_text"]
+
+            # Create a unique filename for the output PDF
+            output_filename = f"font_stego_{uuid.uuid4().hex}.pdf"
+            output_path = os.path.join(settings.MEDIA_ROOT, output_filename)
+
+            # Save the uploaded PDF temporarily
+            temp_pdf_path = os.path.join(
+                settings.MEDIA_ROOT, f"temp_{uuid.uuid4().hex}.pdf"
+            )
+            with open(temp_pdf_path, "wb+") as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            try:
+                # Process the PDF using font steganography
+                result = encode_message_in_pdf_font_stego(
+                    temp_pdf_path, output_path, secret_message, cover_text
+                )
+
+                # Clean up the temporary file
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                if result["success"]:
+                    # Return the processed PDF as a download
+                    return FileResponse(
+                        open(output_path, "rb"),
+                        as_attachment=True,
+                        filename=f"font_stego_{pdf_file.name}",
+                    )
+                else:
+                    # Return error if encoding failed
+                    return render(
+                        request,
+                        "pdf_app/font_stego_encode.html",
+                        {"form": form, "error": result["error"]},
+                    )
+
+            except Exception as e:
+                # Clean up in case of error
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                # Log the error
+                print(f"Error in font steganography encoding: {str(e)}")
+
+                # Return error response
+                return render(
+                    request,
+                    "pdf_app/font_stego_encode.html",
+                    {"form": form, "error": f"Error encoding message: {str(e)}"},
+                )
+    else:
+        form = FontStegoEncodeForm()
+
+    return render(request, "pdf_app/font_stego_encode.html", {"form": form})
+
+
+def font_stego_decode(request):
+    """View for decoding messages from font steganography."""
+    page_messages = None  # CHANGED: Now handles multiple pages
+    binary_data = None
+    error = None
+    total_pages = None  # NEW: Track total pages
+
+    if request.method == "POST":
+        form = FontStegoDecodeForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Get the uploaded PDF
+            pdf_file = request.FILES["pdf_file"]
+
+            # Save the uploaded PDF temporarily
+            temp_pdf_path = os.path.join(
+                settings.MEDIA_ROOT, f"temp_{uuid.uuid4().hex}.pdf"
+            )
+            with open(temp_pdf_path, "wb+") as destination:
+                for chunk in pdf_file.chunks():
+                    destination.write(chunk)
+
+            try:
+                # Decode the message from the PDF
+                result = decode_message_from_pdf_font_stego(temp_pdf_path)
+
+                # Clean up the temporary file
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                if result["success"]:
+                    page_messages = result[
+                        "page_messages"
+                    ]  # CHANGED: Get page messages
+                    binary_data = result["binary_data"]
+                    total_pages = result["total_pages"]  # NEW: Get total pages
+                else:
+                    error = result["error"]
+
+            except Exception as e:
+                # Clean up in case of error
+                if os.path.exists(temp_pdf_path):
+                    os.unlink(temp_pdf_path)
+
+                # Log the error
+                print(f"Error in font steganography decoding: {str(e)}")
+                error = f"Error decoding message: {str(e)}"
+
+        else:
+            error = "Please provide a valid PDF file."
+    else:
+        form = FontStegoDecodeForm()
+
+    context = {
+        "form": form,
+        "page_messages": page_messages,  # CHANGED: Pass page messages
+        "binary_data": binary_data,
+        "error": error,
+        "total_pages": total_pages,  # NEW: Pass total pages
+    }
+
+    return render(request, "pdf_app/font_stego_decode.html", context)
