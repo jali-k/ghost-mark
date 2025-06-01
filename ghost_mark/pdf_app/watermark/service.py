@@ -16,11 +16,67 @@ class PDFWatermarkService:
     WATERMARK_COLOR = "#FFFEFA"
 
     @staticmethod
-    def add_invisible_watermark(pdf_file, watermark_text, color=None):
+    def obfuscate_email(email):
+        """
+        Obfuscate email to prevent auto-detection as clickable mailto link
+
+        Args:
+            email (str): Original email address
+
+        Returns:
+            str: Obfuscated email that won't be detected as clickable
+        """
+        if not email or "@" not in email:
+            return email
+
+        # Replace @ with AT and . with DOT
+        obfuscated = email.replace("@", "AT").replace(".", "DOT")
+
+        print(f"📧 Original: {email}")
+        print(f"🔒 Obfuscated: {obfuscated}")
+
+        return obfuscated
+
+    @staticmethod
+    def deobfuscate_email(obfuscated_email):
+        """
+        Convert obfuscated email back to original format
+
+        Args:
+            obfuscated_email (str): Obfuscated email string
+
+        Returns:
+            str: Original email address
+        """
+        if not obfuscated_email:
+            return obfuscated_email
+
+        # Restore original email format
+        restored = obfuscated_email.replace("AT", "@").replace("DOT", ".")
+
+        print(f"🔒 Obfuscated: {obfuscated_email}")
+        print(f"📧 Restored: {restored}")
+
+        return restored
+
+    @staticmethod
+    def add_invisible_watermark(
+        pdf_file, watermark_text, color=None, skip_first_page=True
+    ):
         """
         Add an invisible watermark to a PDF file using a fixed near-white color.
         Places watermarks only at the top and bottom of the left side of each page.
+        Automatically obfuscates email addresses in the watermark text.
         Returns the watermarked PDF file as BytesIO.
+
+        Args:
+            pdf_file: PDF file object
+            watermark_text (str): Text to use as watermark (will be obfuscated if it's an email)
+            color (str): Color for watermark (uses default if None)
+            skip_first_page (bool): If True, don't add watermark to first page
+
+        Returns:
+            BytesIO: Watermarked PDF file as BytesIO
         """
         # Always use our fixed watermark color for consistency
         color = PDFWatermarkService.WATERMARK_COLOR
@@ -29,7 +85,18 @@ class PDFWatermarkService:
         color = color.lstrip("#")
         r, g, b = tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
 
-        # Create a watermark
+        # Obfuscate email to prevent clickable links
+        processed_watermark_text = PDFWatermarkService.obfuscate_email(watermark_text)
+
+        # Read the input PDF first to get page count
+        existing_pdf = PyPDF2.PdfReader(pdf_file)
+        output = PyPDF2.PdfWriter()
+        total_pages = len(existing_pdf.pages)
+
+        print(f"📄 Total pages: {total_pages}")
+        print(f"🚫 Skip first page: {skip_first_page}")
+
+        # Create watermark once (we'll reuse it for all pages that need it)
         packet = BytesIO()
         c = canvas.Canvas(packet, pagesize=letter)
 
@@ -41,8 +108,8 @@ class PDFWatermarkService:
         c.setFillColorRGB(r / 255, g / 255, b / 255)
 
         # Place watermarks only on the left side - top and bottom
-        c.drawString(20, height - 30, watermark_text)  # Top left
-        c.drawString(20, 20, watermark_text)  # Bottom left
+        c.drawString(20, height - 30, processed_watermark_text)  # Top left
+        c.drawString(20, 20, processed_watermark_text)  # Bottom left
 
         c.save()
 
@@ -50,15 +117,19 @@ class PDFWatermarkService:
         packet.seek(0)
         watermark_pdf = PyPDF2.PdfReader(packet)
 
-        # Read the input PDF
-        existing_pdf = PyPDF2.PdfReader(pdf_file)
-        output = PyPDF2.PdfWriter()
-
-        # Add the watermark to each page
-        for i in range(len(existing_pdf.pages)):
+        # Process each page
+        for i in range(total_pages):
             page = existing_pdf.pages[i]
-            page.merge_page(watermark_pdf.pages[0])
-            output.add_page(page)
+
+            # Skip first page if requested
+            if skip_first_page and i == 0:
+                print(f"📄 Page {i + 1}: Skipping (first page)")
+                output.add_page(page)  # Add page without watermark
+            else:
+                print(f"📄 Page {i + 1}: Adding watermark")
+                # Add watermark to this page
+                page.merge_page(watermark_pdf.pages[0])
+                output.add_page(page)
 
         # Save the result to BytesIO
         result_pdf = BytesIO()
@@ -71,6 +142,7 @@ class PDFWatermarkService:
     def extract_watermark(file_path):
         """
         Extract the watermark from a PDF or image file by focusing on the specific watermark color.
+        Automatically deobfuscates email addresses in extracted text.
         Works with PDFs and screenshots (PNG, JPG).
         """
         # Get our fixed watermark color
@@ -87,6 +159,7 @@ class PDFWatermarkService:
                 from pdf2image import convert_from_path
 
                 images = convert_from_path(file_path, dpi=300)
+                print(f"📄 Processing {len(images)} pages from PDF")
             except ImportError:
                 # If pdf2image not available, create blank image
                 print("Warning: pdf2image not available. Using simplified approach.")
@@ -94,14 +167,17 @@ class PDFWatermarkService:
         elif file_extension in [".png", ".jpg", ".jpeg"]:
             # For image files, load directly
             images = [Image.open(file_path)]
+            print(f"🖼️ Processing single image file")
         else:
             raise ValueError("Unsupported file format. Use PDF, PNG, or JPG")
 
         # Extract watermark from all images and collect results
         extracted_texts = []
 
-        for img in images:
+        for page_num, img in enumerate(images):
             try:
+                print(f"🔍 Analyzing page/image {page_num + 1}")
+
                 # Convert PIL Image to OpenCV format
                 img_cv = np.array(img.convert("RGB"))
                 img_cv = cv2.cvtColor(img_cv, cv2.COLOR_RGB2BGR)
@@ -133,32 +209,60 @@ class PDFWatermarkService:
                 # Clean up and add to results
                 text = text.strip()
                 if text:
+                    print(f"📝 Found text on page {page_num + 1}: {text}")
                     extracted_texts.append(text)
+                else:
+                    print(f"❌ No text found on page {page_num + 1}")
 
-                # Debug: Save masked image to see what's being processed
-                # cv2.imwrite("watermark_masked.png", binary)
             except Exception as e:
-                print(f"Error processing image: {str(e)}")
+                print(f"❌ Error processing page {page_num + 1}: {str(e)}")
 
         # Process all extracted texts
         if extracted_texts:
-            # Return the most common text found
-            from collections import Counter
+            print(f"📊 Total extracted texts: {len(extracted_texts)}")
 
-            # Flatten and clean the extracted text
-            all_words = []
+            # Instead of returning just the most common word,
+            # let's reconstruct the complete watermark text
+
+            # Method 1: Try to find the longest/most complete text
+            longest_text = max(extracted_texts, key=len)
+            print(f"🔍 Longest extracted text: {longest_text}")
+
+            # Method 2: If multiple similar texts, try to merge them
+            # Clean up each extracted text and see if we can reconstruct
+            cleaned_texts = []
             for text in extracted_texts:
-                for line in text.splitlines():
-                    words = line.split()
-                    all_words.extend(
-                        [w for w in words if len(w) > 2]
-                    )  # Only consider words with length > 2
+                # Remove extra whitespace and newlines
+                cleaned = " ".join(text.split())
+                if cleaned and len(cleaned) > 3:  # Ignore very short extractions
+                    cleaned_texts.append(cleaned)
 
-            if all_words:
-                word_counts = Counter(all_words)
-                most_common = word_counts.most_common(1)[0][0]
-                return most_common
+            if cleaned_texts:
+                # Use the most frequent complete text, not just individual words
+                from collections import Counter
 
+                text_counts = Counter(cleaned_texts)
+                most_common_complete_text = text_counts.most_common(1)[0][0]
+
+                print(f"🔍 Most common complete text: {most_common_complete_text}")
+
+                # Choose the better option between longest and most common
+                final_text = (
+                    most_common_complete_text
+                    if len(most_common_complete_text) >= len(longest_text)
+                    else longest_text
+                )
+
+                print(f"🔍 Final extracted text: {final_text}")
+
+                # Deobfuscate the extracted text to restore original email
+                restored_text = PDFWatermarkService.deobfuscate_email(final_text)
+
+                print(f"📧 Final restored text: {restored_text}")
+
+                return restored_text
+
+        print("❌ No watermark found in any page/image")
         return "No watermark found"
 
     @staticmethod
@@ -177,3 +281,35 @@ class PDFWatermarkService:
             images = [Image.new("RGB", (612, 792), "white")]
 
         return images
+
+    @staticmethod
+    def test_obfuscation():
+        """
+        Test function to see how email obfuscation works
+        """
+        test_emails = [
+            "abcd1234@gmail.com",
+            "user@example.com",
+            "test.email@domain.co.uk",
+            "admin@company.org",
+            "not_an_email_text",
+        ]
+
+        print("🧪 Testing Email Obfuscation:")
+        print("=" * 50)
+
+        for email in test_emails:
+            obfuscated = PDFWatermarkService.obfuscate_email(email)
+            restored = PDFWatermarkService.deobfuscate_email(obfuscated)
+
+            print(f"Original:    {email}")
+            print(f"Obfuscated:  {obfuscated}")
+            print(f"Restored:    {restored}")
+            print(f"Match:       {'✅' if email == restored else '❌'}")
+            print("-" * 30)
+
+
+# Example usage and testing
+if __name__ == "__main__":
+    # Test the obfuscation system
+    PDFWatermarkService.test_obfuscation()
