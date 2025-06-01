@@ -193,20 +193,28 @@ class ExtractWatermarkView(View):
         """Process the form and extract watermark."""
         form = ExtractWatermarkForm(request.POST, request.FILES)
         if not form.is_valid():
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": False, "error": "Invalid form data"})
             return render(request, self.template_name, {"form": form})
 
         file = request.FILES["file"]
 
-        # Save the file temporarily
+        # Save the file temporarily with a unique name to avoid conflicts
         temp_dir = os.path.join(settings.MEDIA_ROOT, "temp")
         os.makedirs(temp_dir, exist_ok=True)
-        temp_path = os.path.join(temp_dir, file.name)
 
-        with open(temp_path, "wb+") as destination:
-            for chunk in file.chunks():
-                destination.write(chunk)
+        # Use a unique filename to avoid conflicts
+        import uuid
+
+        unique_filename = f"{uuid.uuid4().hex}_{file.name}"
+        temp_path = os.path.join(temp_dir, unique_filename)
 
         try:
+            # Save the uploaded file
+            with open(temp_path, "wb+") as destination:
+                for chunk in file.chunks():
+                    destination.write(chunk)
+
             # Extract the watermark
             watermark_text = PDFWatermarkService.extract_watermark(temp_path)
 
@@ -230,10 +238,11 @@ class ExtractWatermarkView(View):
                 os.remove(temp_path)
 
             error_message = str(e)
+            print(f"Error extracting watermark: {error_message}")  # Log for debugging
 
-            # Handle AJAX requests
+            # Handle AJAX requests - use consistent response format
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-                return JsonResponse({"error": error_message}, status=500)
+                return JsonResponse({"success": False, "error": error_message})
 
             # For regular form submissions
             return render(
