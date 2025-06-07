@@ -5,7 +5,6 @@ A comprehensive document security platform that implements multiple advanced ste
 ![Python](https://img.shields.io/badge/python-v3.8+-blue.svg)
 ![Django](https://img.shields.io/badge/django-v4.0+-green.svg)
 ![OpenCV](https://img.shields.io/badge/opencv-v4.5+-red.svg)
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ## 🌟 Features
 
@@ -181,9 +180,6 @@ ghostmark-pdf-tools/
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 👨‍💻 Author
 
@@ -193,15 +189,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - 💼 LinkedIn: [Jaliya Kumarasiri](https://www.linkedin.com/in/jaliya-kumarasiri-5a71441b4/)
 - 🐙 GitHub: [@jali-k](https://github.com/jali-k)
 
-## 🙏 Acknowledgments
-
-- University of Peradeniya, Department of Computer Engineering
-- OpenCV and Pytesseract communities
-- Django development team
-
-## ⚠️ Disclaimer
-
-This tool is designed for legitimate document security purposes. Users are responsible for ensuring compliance with applicable laws and regulations when using steganographic techniques.
 
 ---
 
