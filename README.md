@@ -8,7 +8,7 @@ A comprehensive document security platform that implements multiple advanced ste
 
 ## 📸 Overview
 
-### Main Interface
+### Development Interface (Temp)
 ![Ghostmark Main Interface](./images/main-interface.jpg)
 *The web-based interface for uploading, processing, and managing PDF watermarks*
 
