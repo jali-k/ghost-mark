@@ -6,6 +6,12 @@ A comprehensive document security platform that implements multiple advanced ste
 ![Django](https://img.shields.io/badge/django-v4.0+-green.svg)
 ![OpenCV](https://img.shields.io/badge/opencv-v4.5+-red.svg)
 
+## 📸 Overview
+
+### Main Interface
+![Ghostmark Main Interface](./images/main-interface.jpg)
+*The web-based interface for uploading, processing, and managing PDF watermarks*
+
 ## 🌟 Features
 
 ### 🎭 Advanced Steganography Techniques
