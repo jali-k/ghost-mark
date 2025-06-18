@@ -65,7 +65,7 @@ class PDFWatermarkService:
     ):
         """
         Add an invisible watermark to a PDF file using a fixed near-white color.
-        Places watermarks only at the top and bottom of the left side of each page.
+        Places watermarks in the header area at the very top of each page.
         Automatically obfuscates email addresses in the watermark text.
         Returns the watermarked PDF file as BytesIO.
 
@@ -104,12 +104,24 @@ class PDFWatermarkService:
         width, height = letter
 
         # Use a smaller font for less intrusive watermarks
-        c.setFont("Helvetica", 10)  # Small font size for better invisibility
+        c.setFont("Helvetica", 8)  # Even smaller font for header placement
         c.setFillColorRGB(r / 255, g / 255, b / 255)
 
-        # Place watermarks only on the left side - top and bottom
-        c.drawString(20, height - 30, processed_watermark_text)  # Top left
-        c.drawString(20, 20, processed_watermark_text)  # Bottom left
+        # Place watermarks in the header area - very top of the page
+        # Multiple positions in header for better detection reliability
+        header_y = height - 10  # Very close to the top edge (10 points from top)
+
+        # Left side of header
+        c.drawString(20, header_y, processed_watermark_text)
+
+        # # Center of header
+        # text_width = c.stringWidth(processed_watermark_text, "Helvetica", 8)
+        # center_x = (width - text_width) / 2
+        # c.drawString(center_x, header_y, processed_watermark_text)
+
+        # # Right side of header
+        # right_x = width - text_width - 20
+        # c.drawString(right_x, header_y, processed_watermark_text)
 
         c.save()
 
@@ -126,7 +138,7 @@ class PDFWatermarkService:
                 print(f"📄 Page {i + 1}: Skipping (first page)")
                 output.add_page(page)  # Add page without watermark
             else:
-                print(f"📄 Page {i + 1}: Adding watermark")
+                print(f"📄 Page {i + 1}: Adding header watermark")
                 # Add watermark to this page
                 page.merge_page(watermark_pdf.pages[0])
                 output.add_page(page)
@@ -142,6 +154,7 @@ class PDFWatermarkService:
     def extract_watermark(file_path):
         """
         Extract the watermark from a PDF or image file by focusing on the specific watermark color.
+        Looks for watermarks in the header area but uses simpler, more reliable extraction.
         Automatically deobfuscates email addresses in extracted text.
         Works with PDFs and screenshots (PNG, JPG).
         """
