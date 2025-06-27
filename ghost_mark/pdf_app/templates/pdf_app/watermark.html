@@ -100,7 +100,7 @@
 
     <div class="nav-links">
       <a href="{% url 'pdf_app:index' %}">Home</a> |
-      <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
+
       <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
       <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
     </div>
@@ -134,8 +134,12 @@
           >
         </div>
 
-          <!-- Hidden field with fixed color value -->
-          <input type="hidden" name="watermark_color" value="{{ fixed_color|default:'#FFFEFA' }}">
+        <!-- Hidden field with fixed color value -->
+        <input
+          type="hidden"
+          name="watermark_color"
+          value="{{ fixed_color|default:'#FFFEFA' }}"
+        />
 
         <div class="note">
           <strong>Note:</strong> The watermark will be added using a special
