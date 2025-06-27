@@ -1,193 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extract Watermark</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .form-container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .info-container {
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="file"] {
-            width: 100%;
-            padding: 8px;
-            box-sizing: border-box;
-        }
-        small {
-            display: block;
-            margin-top: 5px;
-            color: #666;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .result-container {
-            display: none;
-            border: 1px solid #ddd;
-            padding: 20px;
-            border-radius: 5px;
-            margin-top: 20px;
-            background-color: #f9f9f9;
-        }
-        .watermark-text {
-            padding: 15px;
-            background-color: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            word-break: break-all;
-            margin-top: 10px;
-            font-family: monospace;
-        }
-        .nav-links {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .nav-links a {
-            margin: 0 10px;
-            text-decoration: none;
-            color: #4CAF50;
-        }
-        .nav-links a:hover {
-            text-decoration: underline;
-        }
-        .error-message {
-            color: #d32f2f;
-            margin-top: 10px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      .form-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .info-container {
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+      }
+      input[type="file"] {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+      }
+      small {
+        display: block;
+        margin-top: 5px;
+        color: #666;
+      }
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+      }
+      button:hover {
+        background-color: #45a049;
+      }
+      .result-container {
+        display: none;
+        border: 1px solid #ddd;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 20px;
+        background-color: #f9f9f9;
+      }
+      .watermark-text {
+        padding: 15px;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        word-break: break-all;
+        margin-top: 10px;
+        font-family: monospace;
+      }
+      .nav-links {
+        margin-bottom: 20px;
+        text-align: center;
+      }
+      .nav-links a {
+        margin: 0 10px;
+        text-decoration: none;
+        color: #4caf50;
+      }
+      .nav-links a:hover {
+        text-decoration: underline;
+      }
+      .error-message {
+        color: #d32f2f;
+        margin-top: 10px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Extract Invisible Watermark</h1>
-    
+
     <div class="nav-links">
-        <a href="{% url 'pdf_app:index' %}">Home</a> |
-        <a href="{% url 'pdf_app:recover_email' %}">Recover Email</a> |
-        <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
-        <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
+      <a href="{% url 'pdf_app:index' %}">Home</a> |
+      <a href="{% url 'pdf_app:watermark_pdf' %}">Add Watermark</a> |
+      <a href="{% url 'pdf_app:extract_watermark' %}">Extract Watermark</a>
     </div>
-    
+
     <div class="form-container">
-        <p>Upload a watermarked PDF or a screenshot to extract the hidden watermark.</p>
-        
-        <form method="post" enctype="multipart/form-data" id="extractForm">
-            {% csrf_token %}
-            
-            <div class="form-group">
-                <label for="id_file">Select File:</label>
-                <input type="file" name="file" id="id_file" accept=".pdf,.png,.jpg,.jpeg" required>
-                <small>Supports PDF, PNG, and JPG files</small>
-            </div>
-            
-            <button type="submit">Extract Watermark</button>
-        </form>
+      <p>
+        Upload a watermarked PDF or a screenshot to extract the hidden
+        watermark.
+      </p>
+
+      <form method="post" enctype="multipart/form-data" id="extractForm">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label for="id_file">Select File:</label>
+          <input
+            type="file"
+            name="file"
+            id="id_file"
+            accept=".pdf,.png,.jpg,.jpeg"
+            required
+          />
+          <small>Supports PDF, PNG, and JPG files</small>
+        </div>
+
+        <button type="submit">Extract Watermark</button>
+      </form>
     </div>
-    
+
     {% if watermark_text %}
-    <div class="result-container" style="display: block;">
-        <h3>Extracted Watermark</h3>
-        <div class="watermark-text">{{ watermark_text }}</div>
+    <div class="result-container" style="display: block">
+      <h3>Extracted Watermark</h3>
+      <div class="watermark-text">{{ watermark_text }}</div>
+    </div>
+    {% endif %} {% if error %}
+    <div class="result-container" style="display: block">
+      <h3>Error</h3>
+      <div class="error-message">{{ error }}</div>
     </div>
     {% endif %}
-    
-    {% if error %}
-    <div class="result-container" style="display: block;">
-        <h3>Error</h3>
-        <div class="error-message">{{ error }}</div>
-    </div>
-    {% endif %}
-    
+
     <div class="result-container" id="extractResult">
-        <h3>Extracted Watermark</h3>
-        <div class="watermark-text" id="watermarkContent">Processing...</div>
+      <h3>Extracted Watermark</h3>
+      <div class="watermark-text" id="watermarkContent">Processing...</div>
     </div>
-    
+
     <div class="info-container">
-        <h3>How It Works</h3>
-        <p>The watermark extraction tool uses computer vision techniques to detect subtle color differences in your document that are invisible to the naked eye.</p>
-        <p>When you upload a watermarked PDF or a screenshot of a watermarked document, our system:</p>
-        <ol>
-            <li>Analyzes the image data to find content in the near-white color range</li>
-            <li>Isolates the watermark from the background</li>
-            <li>Uses optical character recognition (OCR) to extract the text</li>
-        </ol>
-        <p>The extracted watermark can be used to identify the source of the document.</p>
+      <h3>How It Works</h3>
+      <p>
+        The watermark extraction tool uses computer vision techniques to detect
+        subtle color differences in your document that are invisible to the
+        naked eye.
+      </p>
+      <p>
+        When you upload a watermarked PDF or a screenshot of a watermarked
+        document, our system:
+      </p>
+      <ol>
+        <li>
+          Analyzes the image data to find content in the near-white color range
+        </li>
+        <li>Isolates the watermark from the background</li>
+        <li>Uses optical character recognition (OCR) to extract the text</li>
+      </ol>
+      <p>
+        The extracted watermark can be used to identify the source of the
+        document.
+      </p>
     </div>
-    
+
     <script>
-        document.getElementById('extractForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalBtnText = submitBtn.textContent;
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Extracting...';
-            
-            const formData = new FormData(this);
-            
-            // Show loading indicator
-            document.getElementById('watermarkContent').innerHTML = 'Extracting watermark...';
-            document.getElementById('extractResult').style.display = 'block';
-            
-            fetch('{% url "pdf_app:extract_watermark" %}', {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                }
+      document
+        .getElementById("extractForm")
+        .addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const submitBtn = this.querySelector('button[type="submit"]');
+          const originalBtnText = submitBtn.textContent;
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Extracting...";
+
+          const formData = new FormData(this);
+
+          // Show loading indicator
+          document.getElementById("watermarkContent").innerHTML =
+            "Extracting watermark...";
+          document.getElementById("extractResult").style.display = "block";
+
+          fetch('{% url "pdf_app:extract_watermark" %}', {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+
+              if (data.success) {
+                document.getElementById("watermarkContent").innerHTML =
+                  data.watermark_text;
+              } else {
+                document.getElementById("watermarkContent").innerHTML =
+                  '<span class="error-message">Error: ' +
+                  (data.error || "Failed to extract watermark") +
+                  "</span>";
+              }
             })
-            .then(response => response.json())
-            .then(data => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-                
-                if (data.success) {
-                    document.getElementById('watermarkContent').innerHTML = data.watermark_text;
-                } else {
-                    document.getElementById('watermarkContent').innerHTML = 
-                        '<span class="error-message">Error: ' + (data.error || 'Failed to extract watermark') + '</span>';
-                }
-            })
-            .catch(error => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = originalBtnText;
-                
-                document.getElementById('watermarkContent').innerHTML = 
-                    '<span class="error-message">Error: ' + error + '</span>';
+            .catch((error) => {
+              submitBtn.disabled = false;
+              submitBtn.textContent = originalBtnText;
+
+              document.getElementById("watermarkContent").innerHTML =
+                '<span class="error-message">Error: ' + error + "</span>";
             });
         });
     </script>
-</body>
+  </body>
 </html>
