@@ -524,42 +524,45 @@ def add_qr_code_to_pdf(input_pdf, output_pdf, email):
 
     for page_num in range(len(reader.pages)):
         page = reader.pages[page_num]
-        page_width = float(page.mediabox.width)
-        page_height = float(page.mediabox.height)
 
-        # Create a new PDF with Reportlab to draw the QR code
-        packet = io.BytesIO()
-        c = canvas.Canvas(packet, pagesize=(page_width, page_height))
+        # Only add QR code to the first page (page_num == 0)
+        if page_num == 0:
+            page_width = float(page.mediabox.width)
+            page_height = float(page.mediabox.height)
 
-        # Define QR code parameters
-        qr_size = 50  # Size of QR code in points (approximately 0.7 inch)
-        margin = 20  # Margin from the edge in points
+            # Create a new PDF with Reportlab to draw the QR code
+            packet = io.BytesIO()
+            c = canvas.Canvas(packet, pagesize=(page_width, page_height))
 
-        # Use ImageReader to read directly from BytesIO buffer
-        qr_buffer.seek(0)  # Reset buffer position
-        qr_image = ImageReader(qr_buffer)
+            # Define QR code parameters
+            qr_size = 50  # Size of QR code in points (approximately 0.7 inch)
+            margin = 20  # Margin from the edge in points
 
-        # Place the QR code at the bottom right corner
-        c.drawImage(
-            qr_image,
-            page_width - qr_size - margin,  # X position
-            margin,  # Y position
-            width=qr_size,
-            height=qr_size,
-        )
+            # Use ImageReader to read directly from BytesIO buffer
+            qr_buffer.seek(0)  # Reset buffer position
+            qr_image = ImageReader(qr_buffer)
 
-        c.save()
+            # Place the QR code at the bottom right corner
+            c.drawImage(
+                qr_image,
+                page_width - qr_size - margin,  # X position
+                margin,  # Y position
+                width=qr_size,
+                height=qr_size,
+            )
 
-        # Move to the beginning of the BytesIO buffer
-        packet.seek(0)
+            c.save()
 
-        # Create a new PDF with the QR code
-        qr_pdf = PdfReader(packet)
+            # Move to the beginning of the BytesIO buffer
+            packet.seek(0)
 
-        # Merge the QR code PDF with the current page
-        page.merge_page(qr_pdf.pages[0])
+            # Create a new PDF with the QR code
+            qr_pdf = PdfReader(packet)
 
-        # Add the page to the output PDF
+            # Merge the QR code PDF with the current page
+            page.merge_page(qr_pdf.pages[0])
+
+        # Add the page to the output PDF (whether it has QR code or not)
         writer.add_page(page)
 
     # Write the output PDF
