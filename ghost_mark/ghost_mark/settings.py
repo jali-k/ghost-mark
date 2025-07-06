@@ -23,6 +23,8 @@ INSTALLED_APPS = [
     # Your apps
     "api",
     "pdf_app",
+    "django_celery_beat",
+    "django_celery_results",
 ]
 
 MIDDLEWARE = [
@@ -84,6 +86,35 @@ DATABASES = {
     }
 }
 
+# ===================
+# CELERY CONFIGURATION
+# ===================
+
+# Celery settings
+CELERY_BROKER_URL = "redis://localhost:6379/0"
+CELERY_RESULT_BACKEND = "redis://localhost:6379/0"
+
+# Celery task settings
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = "UTC"
+
+# Celery worker settings for PDF processing
+CELERY_WORKER_CONCURRENCY = 4  # Number of concurrent workers
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Important for large files
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 50  # Restart workers to prevent memory leaks
+
+# Task routing (optional but recommended)
+CELERY_TASK_ROUTES = {
+    "pdf_app.tasks.process_pdf_task": {"queue": "pdf_processing"},
+    "pdf_app.tasks.cleanup_expired_jobs": {"queue": "cleanup"},
+}
+
+# Task time limits
+CELERY_TASK_SOFT_TIME_LIMIT = 300  # 5 minutes
+CELERY_TASK_TIME_LIMIT = 600  # 10 minutes hard limit
+
 # INTERNATIONALIZATION
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
@@ -97,6 +128,11 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # MEDIA FILES
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+
+# Create required directories
+MEDIA_SUBDIRS = ["temp_uploads", "processed", "watermarked"]
+for subdir in MEDIA_SUBDIRS:
+    os.makedirs(os.path.join(MEDIA_ROOT, subdir), exist_ok=True)
 
 # DEFAULT PRIMARY KEY FIELD TYPE
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
