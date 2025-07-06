@@ -79,10 +79,15 @@ AUTH_PASSWORD_VALIDATORS = [
 WSGI_APPLICATION = "ghost_mark.wsgi.application"  # Replace with your project name
 
 # DATABASE CONFIGURATION
+
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'ghostmark',
+        'USER': 'ghostmarkuser',
+        'PASSWORD': 'GhostPos12#',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
@@ -121,9 +126,22 @@ TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
+
+# Add for HTTPS
+SECURE_SSL_REDIRECT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # STATIC FILES
-STATIC_URL = "/static/"
-STATIC_ROOT = BASE_DIR / "staticfiles"
+# STATIC_URL = "/static/"
+# STATIC_ROOT = BASE_DIR / "staticfiles"
+
+STATIC_URL = 'static/'
+# Default primary key field type
+# https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
+
+# DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
 # MEDIA FILES
 MEDIA_URL = "/media/"
@@ -140,6 +158,35 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # CORS SETTINGS (from our previous fix)
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+
+# Add these additional CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # REST FRAMEWORK SETTINGS
 REST_FRAMEWORK = {
