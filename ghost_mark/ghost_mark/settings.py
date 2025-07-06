@@ -106,7 +106,7 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "UTC"
 
 # Celery worker settings for PDF processing
-CELERY_WORKER_CONCURRENCY = 4  # Number of concurrent workers
+CELERY_WORKER_CONCURRENCY = 6  # Number of concurrent workers
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Important for large files
 CELERY_WORKER_MAX_TASKS_PER_CHILD = 50  # Restart workers to prevent memory leaks
 
